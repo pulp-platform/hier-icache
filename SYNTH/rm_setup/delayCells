@@ -1,0 +1,24 @@
+set UMC_DelayCellList [list uk65lscllmvbbl_108c125_wc/DEL1M1W \
+uk65lscllmvbbl_108c125_wc/DEL1M4W \
+uk65lscllmvbbl_108c125_wc/DEL2M1W \
+uk65lscllmvbbl_108c125_wc/DEL2M4W \
+uk65lscllmvbbl_108c125_wc/DEL3M1W \
+uk65lscllmvbbl_108c125_wc/DEL3M4W \
+uk65lscllmvbbl_108c125_wc/DEL4M1W \
+uk65lscllmvbbl_108c125_wc/DEL4M4W \
+uk65lscllmvbbr_108c125_wc/DEL1M1R \
+uk65lscllmvbbr_108c125_wc/DEL1M4R \
+uk65lscllmvbbr_108c125_wc/DEL2M1R \
+uk65lscllmvbbr_108c125_wc/DEL2M4R \
+uk65lscllmvbbr_108c125_wc/DEL3M1R \
+uk65lscllmvbbr_108c125_wc/DEL3M4R \
+uk65lscllmvbbr_108c125_wc/DEL4M1R \
+uk65lscllmvbbr_108c125_wc/DEL4M4R \
+uk65lscllmvbbh_108c125_wc/DEL1M1S \
+uk65lscllmvbbh_108c125_wc/DEL1M4S \
+uk65lscllmvbbh_108c125_wc/DEL2M1S \
+uk65lscllmvbbh_108c125_wc/DEL2M4S \
+uk65lscllmvbbh_108c125_wc/DEL3M1S \
+uk65lscllmvbbh_108c125_wc/DEL3M4S \
+uk65lscllmvbbh_108c125_wc/DEL4M1S \
+uk65lscllmvbbh_108c125_wc/DEL4M4S ]
