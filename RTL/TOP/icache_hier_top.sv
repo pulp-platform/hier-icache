@@ -20,10 +20,10 @@
 //                                                                            //
 //                                                                            //
 //                                                                            //
-// Create Date:    22/01/2018                                                 //
+// Create Date:    20/10/2019                                                 //
 // Design Name:    ICACHE EXPL                                                //
 // Module Name:    icache_hier_top                                            //
-// Project Name:   MrWolf                                                     //
+// Project Name:   PULP                                                       //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    This block represents the top module for the shared cache  //
@@ -141,6 +141,7 @@ module icache_hier_top
    output logic                                         axi_master_bready_o,
    // ---------------------------------------------------------------
 
+   input  logic [NB_CORES-1:0]                          enable_l1_l15_prefetch_i,
    input  logic                                         special_core_dest_i,
 
    SP_ICACHE_CTRL_UNIT_BUS.Slave                        IC_ctrl_unit_bus_main[SH_NB_BANKS],
@@ -358,6 +359,8 @@ module icache_hier_top
             .refill_addr_o        ( refill_addr_int[i]                           ),
             .refill_r_valid_i     ( refill_r_valid_int[i]                        ),
             .refill_r_data_i      ( refill_r_data_int[i]                         ),
+
+            .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch_i[i]              ),
 
             .bypass_icache_i      ( IC_ctrl_unit_bus_pri[i].bypass_req           ),
             .cache_is_bypassed_o  ( IC_ctrl_unit_bus_pri[i].bypass_ack           ),

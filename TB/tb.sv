@@ -23,7 +23,7 @@ module tb;
    parameter FETCH_ADDR_WIDTH = 32;
    parameter FETCH_DATA_WIDTH = 128;
 
-   parameter PRI_NB_WAYS          = 2;
+   parameter PRI_NB_WAYS          = 4;
    parameter PRI_CACHE_SIZE       = 512;
    parameter PRI_CACHE_LINE       = 1;
 
@@ -33,7 +33,7 @@ module tb;
    parameter SH_CACHE_LINE       = 1;
 
    parameter L2_ADDR_WIDTH    = 20;
-   parameter L2_SIZE          = 1024*1024; // 1MB
+   parameter L2_SIZE          = 3*512*1024; // 1.5MB
    parameter USE_REDUCED_TAG  = "TRUE";
 
    parameter CLK_PERIOD       = 2.0;
@@ -156,6 +156,9 @@ module tb;
    logic [NB_CORES - 1 : 0] pri_flush_req;
    logic [NB_CORES - 1 : 0] pri_sel_flush_req;
 
+   logic [NB_CORES - 1 : 0] enable_l1_l15_prefetch;
+   logic                    special_core_icache;
+
    genvar   i;
 
    generate
@@ -193,6 +196,8 @@ module tb;
       pri_bypass_req    = '1;
       pri_flush_req     = '0;
       pri_sel_flush_req = '0;
+      enable_l1_l15_prefetch = '0;
+      special_core_icache = '0;
 
       sh_req_enable     = '0;
       sh_req_disable    = '1;
@@ -221,6 +226,20 @@ module tb;
       fetch_enable = '1;
 
       #1000;
+
+      sh_req_disable    = 9'h000;
+      sh_req_enable     = 9'h1FF;
+      pri_bypass_req    = 9'h000;
+
+      enable_l1_l15_prefetch = 9'h1FF;
+
+      for(int i=0;i<100;i++)
+        begin
+           #4;
+           enable_l1_l15_prefetch = 9'h000;
+           #4;
+           enable_l1_l15_prefetch = 9'h1FF;
+        end
 
       @(eoc_event);
 
@@ -417,9 +436,13 @@ module tb;
       .SH_CACHE_SIZE     ( SH_CACHE_SIZE    ), // 32*1024, // in Byte
       .SH_CACHE_LINE     ( SH_CACHE_LINE    ), // 1,       // in word of [FETCH_DATA_WIDTH]
 
-      .PRI_NB_WAYS       ( PRI_NB_WAYS      ), // 2,
+      .PRI_NB_WAYS       ( PRI_NB_WAYS      ), // 4,
       .PRI_CACHE_SIZE    ( PRI_CACHE_SIZE   ), // 256, // in Byte
       .PRI_CACHE_LINE    ( PRI_CACHE_LINE   ), // 1,   // in word of [FETCH_DATA_WIDTH]
+
+      .USE_SPECIAL_CORE       ( "TRUE"     ),
+      .SPECIAL_CORE_ID        ( 8          ),
+      .SPECIAL_PRI_CACHE_SIZE ( 1024       ), // 1024 in Byte
 
       .AXI_ID            ( AXI_ID           ), // 6,
       .AXI_ADDR          ( AXI_ADDR         ), // 32,
@@ -500,6 +523,8 @@ module tb;
       .axi_master_bvalid_i     ( axi_master_bvalid_int     ),  // input  logic
       .axi_master_bready_o     ( axi_master_bready_int     ),  // output logic
       // ---------------------------------------------------------------
+       .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch   ),
+       .special_core_dest_i    ( special_core_icache        ),
 
        .IC_ctrl_unit_bus_pri   ( IC_ctrl_unit_bus_pri      ),
        .IC_ctrl_unit_bus_main  ( IC_ctrl_unit_bus_main     )

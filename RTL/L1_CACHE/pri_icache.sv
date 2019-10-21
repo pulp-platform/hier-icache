@@ -69,6 +69,8 @@ module pri_icache
    input  logic                           refill_r_valid_i,
    input  logic [FETCH_DATA_WIDTH-1:0]    refill_r_data_i,
 
+   input  logic                           enable_l1_l15_prefetch_i,
+
    input  logic                           bypass_icache_i,
    output logic                           cache_is_bypassed_o,
    input  logic                           flush_icache_i,
@@ -181,6 +183,8 @@ module pri_icache
       .ctrl_clear_regs_i        ( ctrl_clear_regs_i        ),
       .ctrl_enable_regs_i       ( ctrl_enable_regs_i       ),
 `endif
+
+      .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch_i ),
 
       // interface with processor
       .fetch_req_i              ( fetch_req_i              ),

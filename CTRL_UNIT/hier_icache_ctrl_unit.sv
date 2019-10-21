@@ -54,6 +54,7 @@
     `define ENABLE_CNTS               6'b00_0101 //0x14
 `endif
     `define SPECIAL_CORE_CACHE_CFG    6'b00_0110 //0x18
+    `define ENABLE_L1_L15_PREFETCH   6'b00_0111 //0x1C
 
 
 //-----------------------------------//
@@ -102,6 +103,7 @@ module hier_icache_ctrl_unit
     output logic [31:0]                          L2_icache_sel_flush_addr_o,
     input  logic [NB_CACHE_BANKS-1:0]            L2_icache_sel_flush_ack_i,
 
+    output logic [NB_CORES-1:0]                  enable_l1_l15_prefetch_o,
     output logic                                 special_core_icache_cfg_o
 
 `ifdef FEATURE_ICACHE_STAT
@@ -319,6 +321,7 @@ generate
               end
 
               special_core_icache_cfg_o <= 1'b0;
+              enable_l1_l15_prefetch_o  <=  'h0;
       end
       else
       begin
@@ -369,9 +372,14 @@ generate
                 end
             `endif
 
-                8'h18: // Special COre cache dstination
+                8'h18: // Special core cache dstination
                 begin
                   special_core_icache_cfg_o <= speriph_slave_wdata_i[0];
+                end
+
+                8'h1C: // enable l1 to l15 prefetch feature 
+                begin
+                  enable_l1_l15_prefetch_o <= speriph_slave_wdata_i[NB_CORES-1:0];
                 end
             endcase
         end
@@ -407,6 +415,7 @@ generate
           // Clear and start
           5:   begin speriph_slave_r_rdata_o       <= perf_cnt_enable;            end
           6:   begin speriph_slave_r_rdata_o       <= special_core_icache_cfg_o;  end
+          7:   begin speriph_slave_r_rdata_o       <= enable_l1_l15_prefetch_o;   end
 
           (BASE_PERF_CNT+0):   begin speriph_slave_r_rdata_o       <= 32'hF1CA_B01A ;  end
           (BASE_PERF_CNT+1):   begin speriph_slave_r_rdata_o       <= 32'hF1CA_B01A ;  end
@@ -620,6 +629,12 @@ endgenerate
                         `endif
 
                             8'h18: // Enable BYPASS
+                            begin
+                              deliver_response = 1;
+                              NS = IDLE;
+                            end
+
+                            8'h1C: // Enable BYPASS
                             begin
                               deliver_response = 1;
                               NS = IDLE;
