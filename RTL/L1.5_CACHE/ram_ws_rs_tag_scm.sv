@@ -9,7 +9,7 @@
 // specific language governing permissions and limitations under the License.
 
 
-`include "ulpsoc_defines.sv"
+`include "pulp_soc_defines.sv"
 // `define  USE_SRAM
 
 

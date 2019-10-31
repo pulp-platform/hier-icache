@@ -37,7 +37,7 @@
 
 // `define USE_REQ_BUFF
 `define USE_RESP_BUFF
-`include "ulpsoc_defines.sv"
+`include "pulp_soc_defines.sv"
 
 module pri_icache
 #(
