@@ -14,8 +14,6 @@
      - pri_icache_controller.sv
      - pri_icache.sv
  - TOP
-     - hier_icache_demux.sv
-     - icache128_2_axi64.sv
      - icache_hier_top.sv
  - SIM
      - compile.csh
