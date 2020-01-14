@@ -18,8 +18,6 @@ cd ../SIM
 
 # COMPILE THE RTL
  vlog -quiet -sv ../RTL/TOP/icache_hier_top.sv
- vlog -quiet -sv ../RTL/TOP/hier_icache_demux.sv
- vlog -quiet -sv ../RTL/TOP/icache128_2_axi64.sv
 
  vlog -quiet -sv ../RTL/L1_CACHE/pri_icache_controller.sv
  vlog -quiet -sv ../RTL/L1_CACHE/pri_icache.sv
@@ -105,9 +103,9 @@ cd ../SIM
 
 
 # To enable the ICACHES
-# force -freeze sim:/tb/sh_req_disable   9'b00000_0000 0
-# force -freeze sim:/tb/sh_req_enable    9'b11111_1111 0
-# force -freeze sim:/tb/pri_bypass_req   9'b00000_0000 0
-# force -freeze sim:/tb/enable_l1_l15_prefetch   9'b11111_1111 0
+# force -freeze sim:/tb/sh_req_disable   8'b00000_0000 0
+# force -freeze sim:/tb/sh_req_enable    8'b11111_1111 0
+# force -freeze sim:/tb/pri_bypass_req   8'b00000_0000 0
+# force -freeze sim:/tb/enable_l1_l15_prefetch   8'b11111_1111 0
 # force -freeze sim:/tb/special_core_icache      1'b0 0
 # run 1ms

@@ -157,7 +157,6 @@ module tb;
    logic [NB_CORES - 1 : 0] pri_sel_flush_req;
 
    logic [NB_CORES - 1 : 0] enable_l1_l15_prefetch;
-   logic                    special_core_icache;
 
    genvar   i;
 
@@ -197,7 +196,6 @@ module tb;
       pri_flush_req     = '0;
       pri_sel_flush_req = '0;
       enable_l1_l15_prefetch = '0;
-      special_core_icache = '0;
 
       sh_req_enable     = '0;
       sh_req_disable    = '1;
@@ -440,10 +438,6 @@ module tb;
       .PRI_CACHE_SIZE    ( PRI_CACHE_SIZE   ), // 256, // in Byte
       .PRI_CACHE_LINE    ( PRI_CACHE_LINE   ), // 1,   // in word of [FETCH_DATA_WIDTH]
 
-      .USE_SPECIAL_CORE       ( "TRUE"     ),
-      .SPECIAL_CORE_ID        ( 8          ),
-      .SPECIAL_PRI_CACHE_SIZE ( 1024       ), // 1024 in Byte
-
       .AXI_ID            ( AXI_ID           ), // 6,
       .AXI_ADDR          ( AXI_ADDR         ), // 32,
       .AXI_USER          ( AXI_USER         ), // 6,
@@ -524,7 +518,6 @@ module tb;
       .axi_master_bready_o     ( axi_master_bready_int     ),  // output logic
       // ---------------------------------------------------------------
        .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch   ),
-       .special_core_dest_i    ( special_core_icache        ),
 
        .IC_ctrl_unit_bus_pri   ( IC_ctrl_unit_bus_pri      ),
        .IC_ctrl_unit_bus_main  ( IC_ctrl_unit_bus_main     )
