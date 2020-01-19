@@ -3,5 +3,5 @@
 `define EVAL_BE_WIDTH(DATAWIDTH) (DATAWIDTH/8)
 
 
-`define NB_CORES  9
+`define NB_CORES  8
 `define SH_NB_CACHE_BANKS  2

@@ -8,9 +8,8 @@ add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/fetch_gnt_i}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/fetch_rvalid_i}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/fetch_rdata_i}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/fetch_enable_i}
-add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/RANDOM_ADD}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/i}
-add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/count_trans}
+add wave -noupdate -group CORE_0 -radix decimal {/tb/CORE[0]/CORE/count_trans}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/CS}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/NS}
 add wave -noupdate -group CORE_0 {/tb/CORE[0]/CORE/fetch_req_int}
@@ -160,17 +159,10 @@ add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/refill_r_valid_i}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/refill_r_data_i}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/fetch_addr_Q}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/fetch_req_Q}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/fetch_way_Q}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/refill_addr_bypass}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/refill_req_bypass}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/refill_wait_bypass}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/clear_pipe}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/enable_pipe}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/prefetch_enable}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/prefetch_disable}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/prefetch_branch}
-add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/r_prefetching}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/save_fetch_way}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/counter_FLUSH_NS}
 add wave -noupdate -group {PRI_CC[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/i_pri_icache_controller/counter_FLUSH_CS}
@@ -471,46 +463,6 @@ add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_gnt_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_r_valid_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_r_data_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/clk}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/rst_n}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/test_en_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/fetch_req_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/fetch_addr_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/fetch_gnt_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/fetch_rvalid_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/fetch_rdata_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_req_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_gnt_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_addr_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_r_valid_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_r_data_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/enable_l1_l15_prefetch_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/bypass_icache_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/cache_is_bypassed_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/flush_icache_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/cache_is_flushed_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/flush_set_ID_req_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/flush_set_ID_addr_i}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/flush_set_ID_ack_o}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_req_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_we_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_addr_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_rdata_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_wdata_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_req_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_we_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_addr_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_rdata_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/TAG_write_enable}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_addr_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_req_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_gnt_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_r_valid_int}
-add wave -noupdate -group {PRI_CB[8]} {/tb/DUT/PRI_ICACHE[8]/i_pri_icache/refill_r_data_int}
 add wave -noupdate -group ICACHE_INTC /tb/DUT/ICACHE_INTERCONNECT/clk_i
 add wave -noupdate -group ICACHE_INTC /tb/DUT/ICACHE_INTERCONNECT/rst_ni
 add wave -noupdate -group ICACHE_INTC /tb/DUT/ICACHE_INTERCONNECT/request_i
@@ -789,7 +741,7 @@ add wave -noupdate -group L2_MEM /tb/l2_mem_i/Q
 add wave -noupdate -group L2_MEM /tb/l2_mem_i/s_cen
 add wave -noupdate -group L2_MEM /tb/l2_mem_i/s_wen
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {864218030 ps} 0}
+WaveRestoreCursors {{Cursor 1} {282583218 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 252
 configure wave -valuecolwidth 303
@@ -805,4 +757,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {907450950 ps}
+WaveRestoreZoom {0 ps} {364317555 ps}

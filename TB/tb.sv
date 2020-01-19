@@ -187,6 +187,7 @@ module tb;
    begin
       clk          = '0;
       rst_n        = 1'b1;
+      test_en_i    = 1'b0;
       fetch_enable = '0;
 
       sh_clear_regs  = '0;
@@ -225,18 +226,18 @@ module tb;
 
       #1000;
 
-      sh_req_disable    = 9'h000;
-      sh_req_enable     = 9'h1FF;
-      pri_bypass_req    = 9'h000;
+      sh_req_disable    = 8'h00;
+      sh_req_enable     = 8'hFF;
+      pri_bypass_req    = 8'h00;
 
-      enable_l1_l15_prefetch = 9'h1FF;
+      enable_l1_l15_prefetch = 8'hFF;
 
       for(int i=0;i<100;i++)
         begin
            #4;
-           enable_l1_l15_prefetch = 9'h000;
+           enable_l1_l15_prefetch = 8'h00;
            #4;
-           enable_l1_l15_prefetch = 9'h1FF;
+           enable_l1_l15_prefetch = 8'hFF;
         end
 
       @(eoc_event);

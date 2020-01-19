@@ -7,8 +7,6 @@
 // this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
-
-
 `timescale 1ns/1ps
 module tgen_128
 #(
@@ -29,15 +27,15 @@ module tgen_128
    output logic                            eoc_o
 );
 
-   logic [15:0]                         RANDOM_ADD;
-
    int unsigned i, count_trans = 0;
    
    localparam N_TRANS = 10000000;
 
-   enum logic [1:0]  { IDLE, WAIT_RVALID, WAIT_GNT , DONE } CS, NS;
+   enum logic [2:0]  { IDLE, WAIT_RVALID, DELAY_REQ, WAIT_GNT , DONE } CS, NS;
 
    logic [31:0] address[N_TRANS];
+
+   logic [1:0] delay_cnt;
 
    initial
    begin
@@ -73,7 +71,6 @@ module tgen_128
    begin
       if(rst_n == 1'b1)
         ->  reset_deasserted;
-
    end
 
 
@@ -97,10 +94,13 @@ module tgen_128
       if(~rst_n) 
       begin
          CS <= IDLE;
+         delay_cnt <= '0;
       end 
       else 
       begin
           CS <= NS;
+
+         delay_cnt <= delay_cnt + 1;
       end
    end
 
@@ -143,8 +143,9 @@ module tgen_128
                 end
                 else
                 begin
+                   if ($random() % 3 == 0) begin
                     fetch_req_int   = 1'b1;
-                    
+
                     if(fetch_gnt_i)
                     begin
                        NS = WAIT_RVALID;
@@ -153,6 +154,9 @@ module tgen_128
                     begin
                        NS = WAIT_GNT;
                     end
+                   end else begin
+                      NS = DELAY_REQ;
+                   end
                 end
             end
             else
@@ -161,7 +165,22 @@ module tgen_128
                   fetch_req_int = 1'b0;
             end
          end
-         
+
+        DELAY_REQ:
+          begin
+             if (delay_cnt == 3) begin
+                fetch_req_int = 1'b1;
+                if(fetch_gnt_i)
+                  begin
+                     NS = WAIT_RVALID;
+                  end
+                else
+                  begin
+                     NS = WAIT_GNT;
+                  end
+             end
+          end
+
          WAIT_GNT:
          begin
             fetch_req_int   = 1'b1;
