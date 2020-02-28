@@ -157,7 +157,7 @@ module hier_icache_ctrl_unit_wrap
        .L2_icache_sel_flush_req_o   (  IC_ctrl_unit_bus_main_sel_flush_req   ),
        .L2_icache_sel_flush_addr_o  (  IC_ctrl_unit_bus_main_sel_flush_addr  ),
        .L2_icache_sel_flush_ack_i   (  IC_ctrl_unit_bus_main_sel_flush_ack   ),
-       .enable_l1_l15_prefetch_o    ( enable_l1_l15_prefetch_o               ),
+       .enable_l1_l15_prefetch_o    ( enable_l1_l15_prefetch_o               )
 
 
 

@@ -102,7 +102,7 @@ module hier_icache_ctrl_unit
     output logic [31:0]                          L2_icache_sel_flush_addr_o,
     input  logic [NB_CACHE_BANKS-1:0]            L2_icache_sel_flush_ack_i,
 
-    output logic [NB_CORES-1:0]                  enable_l1_l15_prefetch_o,
+    output logic [NB_CORES-1:0]                  enable_l1_l15_prefetch_o
 
 `ifdef FEATURE_ICACHE_STAT
     ,
