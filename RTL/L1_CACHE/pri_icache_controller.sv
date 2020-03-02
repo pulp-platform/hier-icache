@@ -76,7 +76,6 @@ module pri_icache_controller
     input  logic                                            ctrl_clear_regs_i,
     input  logic                                            ctrl_enable_regs_i,
 `endif
-
    input  logic                                             enable_l1_l15_prefetch_i,
 
    // interface with processor
@@ -115,14 +114,16 @@ module pri_icache_controller
 
    localparam OFFSET     = $clog2(SCM_DATA_WIDTH*CACHE_LINE)-3;
 
-   logic [FETCH_ADDR_WIDTH-1:0]                    fetch_addr_Q;
-   logic                                           fetch_req_Q;
+   logic [FETCH_ADDR_WIDTH-1:0]                    fetch_addr_Q, fetch_addr_P;
    logic [NB_WAYS-1:0]                             fetch_way_Q;
 
    logic                                           refill_wait_bypass;
 
    logic                                           clear_pipe;
    logic                                           enable_pipe;
+   logic                                           prefetch_enable;
+   logic                                           prefetch_disable;
+   logic                                           r_prefetching;
    logic                                           save_fetch_way;
 
 
@@ -141,7 +142,7 @@ module pri_icache_controller
 
 
 
-   enum logic [3:0] { DISABLED_ICACHE, BYPASS_DELAY, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
+   enum logic [3:0] { DISABLED_ICACHE, BYPASS_DELAY, WAIT_REFILL_GNT, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, PREFETCH_TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
 
    int unsigned i,j,index;
 
@@ -208,11 +209,11 @@ module pri_icache_controller
       begin
           CS                       <= DISABLED_ICACHE;
           fetch_addr_Q             <= '0;
-          fetch_req_Q              <= '0;
+          fetch_addr_P             <= '0;
           fetch_way_Q              <= '0;
 
           counter_FLUSH_CS         <= '0;
-
+          r_prefetching            <= '0;
       end
       else
       begin
@@ -222,16 +223,24 @@ module pri_icache_controller
           if(save_fetch_way)
             fetch_way_Q              <= fetch_way_int;
 
-          if(enable_pipe)
-          begin
-               fetch_req_Q    <= 1'b1;
-               fetch_addr_Q   <= fetch_addr_i;
-          end
-          else  if(clear_pipe)
-                begin
-                     fetch_req_Q <= '0;
-                end
+         if(prefetch_enable)
+           begin
+              r_prefetching   <= 1'b1;
+           end
+         else if (prefetch_disable)
+           begin
+              r_prefetching   <= 1'b0;
+           end
 
+         if(prefetch_enable)
+           begin
+              fetch_addr_Q   <= fetch_addr_Q + 'h10;
+           end
+         else if(enable_pipe)
+           begin
+              fetch_addr_P   <= fetch_addr_i + 'h10;
+              fetch_addr_Q   <= fetch_addr_i;
+           end
       end
    end
 
@@ -285,7 +294,7 @@ begin
    fetch_rdata_o      = refill_r_data_i; //FIXME ok for AXI 64 and 32bit INSTR
 
    refill_req_o       = 1'b0;
-   refill_addr_o      = fetch_addr_i;
+   refill_addr_o      = fetch_addr_Q;
    fetch_way_int      = '0;
 
 
@@ -294,6 +303,8 @@ begin
 
    enable_pipe             = 1'b0;
    clear_pipe              = 1'b0;
+   prefetch_enable         = 1'b0;
+   prefetch_disable        = 1'b0;
 
    NS                      = CS;
    update_lfsr             = 1'b0;
@@ -334,12 +345,12 @@ begin
               end
            end
          else
-         begin // Enable ICache
-            clear_pipe          = 1'b1;
-            fetch_gnt_o   = 1'b0;
-            refill_req_o  = 1'b0;
-            NS            = FLUSH_ICACHE;
-         end
+           begin // Enable ICache
+              clear_pipe    = 1'b1;
+              fetch_gnt_o   = 1'b0;
+              refill_req_o  = 1'b0;
+              NS            = FLUSH_ICACHE;
+           end
       end
 
      BYPASS_DELAY:
@@ -402,10 +413,6 @@ begin
 
       IDLE_ENABLED:
       begin
-         cache_is_bypassed_o  = 1'b0;
-         cache_is_flushed_o   = 1'b0;
-         flush_set_ID_ack_o   = 1'b0;
-
          fetch_gnt_o          = fetch_req_i & ~(bypass_icache_i | flush_icache_i | flush_set_ID_req_i );
 
          if(bypass_icache_i | flush_icache_i | flush_set_ID_req_i ) // first check if the previous fetch has a miss or HIT
@@ -436,7 +443,7 @@ begin
               DATA_we_o   = 1'b0;
               DATA_addr_o = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
-              enable_pipe          = fetch_req_i;
+              enable_pipe = fetch_req_i;
 
               if(fetch_req_i)
                 begin
@@ -452,18 +459,13 @@ begin
 
      TAG_LOOKUP:
        begin
-          fetch_gnt_o          = fetch_req_i & ~(bypass_icache_i | flush_icache_i | flush_set_ID_req_i );
-
-          cache_is_bypassed_o  = 1'b0;
-          cache_is_flushed_o   = 1'b0;
-          flush_set_ID_ack_o   = 1'b0;
-
+          fetch_gnt_o          = r_prefetching ? 1'b0 : fetch_req_i;
           enable_pipe          = fetch_req_i;
 
           //Read the DATA nd TAG
-          TAG_req_o   = {NB_WAYS{fetch_req_i}};
+          TAG_req_o   = {NB_WAYS{1'b1}};
           TAG_we_o    = 1'b0;
-          TAG_addr_o  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
+          TAG_addr_o  = fetch_req_i ? fetch_addr_i[SET_ID_MSB:SET_ID_LSB] : fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
 
           DATA_req_o  = {NB_WAYS{fetch_req_i}};
           DATA_we_o   = 1'b0;
@@ -471,23 +473,36 @@ begin
 
           if(|way_match)
             begin : HIT
-               hit_counter_enable = 1'b1;
+               hit_counter_enable = ~r_prefetching;
 
-               if(fetch_req_i == 1'b0)
+               if(fetch_req_i)
                  begin
-                    clear_pipe = 1'b1;
-                    NS = IDLE_ENABLED;
+                    prefetch_disable  = 1'b1;
+                    if (r_prefetching) begin
+                       clear_pipe = 1'b1;
+                       NS = IDLE_ENABLED;
+                    end else begin
+                       NS = TAG_LOOKUP;
+                    end
+                 end else begin
+                    if (r_prefetching | ~enable_l1_l15_prefetch_i) begin
+                       prefetch_disable  = 1'b1;
+                       clear_pipe = 1'b1;
+                       NS = IDLE_ENABLED;
+                    end else begin
+                       prefetch_enable  = 1'b1;
+                       NS = TAG_LOOKUP;
+                    end
                  end
-               else
-                 begin
-                    NS = TAG_LOOKUP;
-                 end
-               fetch_rvalid_o  = 1'b1;
-               fetch_rdata_o   = DATA_rdata_i[HIT_WAY];
+
+               if (~r_prefetching) begin
+                  fetch_rvalid_o  = 1'b1;
+                  fetch_rdata_o   = DATA_rdata_i[HIT_WAY];
+               end
             end
           else
             begin : MISS
-               miss_counter_enable      = 1'b1;
+               miss_counter_enable      = ~r_prefetching;
 
                enable_pipe      = 1'b0;
                refill_req_o     = 1'b1;
@@ -513,11 +528,46 @@ begin
                  end
                else
                  begin
-                    NS = TAG_LOOKUP;
+                    NS = WAIT_REFILL_GNT;
                  end
             end
        end //~TAG_LOOKUP
 
+     PREFETCH_TAG_LOOKUP:
+       begin
+          //Read the DATA nd TAG
+          TAG_req_o   = {NB_WAYS{1'b1}};
+          TAG_we_o    = 1'b0;
+          TAG_addr_o  = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
+
+          NS = TAG_LOOKUP;
+       end //~PREFETCH_TAG_LOOKUP
+
+      WAIT_REFILL_GNT:
+        begin
+           enable_pipe      = 1'b0;
+           refill_req_o     = 1'b1;
+           refill_addr_o    = fetch_addr_Q;
+
+           save_fetch_way   = 1'b1;
+           // This check is postponed because thag Check is complex. better to do
+           // one cycle later;
+           if(&way_valid) // all the lines are valid, invalidate one random line
+             begin
+                fetch_way_int = random_way;
+                update_lfsr = 1'b1;
+             end
+           else
+             begin
+                fetch_way_int = first_available_way_OH;
+                update_lfsr = 1'b0;
+             end
+
+           if(refill_gnt_i)
+             begin
+                NS = WAIT_REFILL_DONE;
+             end
+        end
 
       WAIT_REFILL_DONE:
       begin
@@ -525,8 +575,10 @@ begin
          cache_is_flushed_o   = 1'b0;
          flush_set_ID_ack_o   = 1'b0;
 
-         fetch_rdata_o   = refill_r_data_i;
-         fetch_rvalid_o  = refill_r_valid_i;
+         if (~r_prefetching) begin
+            fetch_rdata_o   = refill_r_data_i;
+            fetch_rvalid_o  = refill_r_valid_i;
+         end
 
          DATA_req_o      = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
          DATA_addr_o     = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
@@ -538,16 +590,22 @@ begin
          TAG_addr_o      = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
          TAG_wdata_o     = {1'b1,fetch_addr_Q[TAG_MSB:TAG_LSB]};
 
-
          if(refill_r_valid_i)
-         begin
-            NS = IDLE_ENABLED;
-            clear_pipe = 1'b1;
-         end
+           begin
+              clear_pipe = 1'b1;
+              if (~enable_l1_l15_prefetch_i | enable_l1_l15_prefetch_i & r_prefetching) begin
+                 prefetch_disable  = 1'b1;
+                 NS = IDLE_ENABLED;
+              end
+              else begin
+                 prefetch_enable  = 1'b1;
+                 NS = PREFETCH_TAG_LOOKUP;
+              end
+           end // if (refill_r_valid_i)
          else
-         begin
-            NS = WAIT_REFILL_DONE;
-         end
+           begin
+              NS = WAIT_REFILL_DONE;
+           end
       end //~WAIT_REFILL_DONE
 
       default:
