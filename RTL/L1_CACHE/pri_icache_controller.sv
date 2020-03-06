@@ -94,9 +94,9 @@ module pri_icache_controller
    output logic [FETCH_DATA_WIDTH-1:0]                      DATA_wdata_o,
 
    // interface with READ PORT --> SCM TAG
-   output logic [NB_WAYS-1:0]                               TAG_req_o,
-   output logic [SCM_TAG_ADDR_WIDTH-1:0]                    TAG_addr_o,
-   input  logic [NB_WAYS-1:0][SCM_TAG_WIDTH-1:0]            TAG_rdata_i,
+   output logic [NB_WAYS-1:0][1:0]                          TAG_req_o,
+   output logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]               TAG_addr_o,
+   input  logic [NB_WAYS-1:0][1:0][SCM_TAG_WIDTH-1:0]       TAG_rdata_i,
    output logic [SCM_TAG_WIDTH-1:0]                         TAG_wdata_o,
    output logic                                             TAG_we_o,
 
@@ -129,8 +129,8 @@ module pri_icache_controller
 
    logic [SCM_TAG_ADDR_WIDTH-1:0] counter_FLUSH_NS, counter_FLUSH_CS;
 
-   logic [NB_WAYS-1:0]                    way_match;
-   logic [NB_WAYS-1:0]                    way_valid;
+   logic [1:0][NB_WAYS-1:0]                    way_match;
+   logic [1:0][NB_WAYS-1:0]                    way_valid;
 
    logic [NB_WAYS-1:0]                    random_way;
    logic [$clog2(NB_WAYS)-1:0]            first_available_way;
@@ -142,7 +142,7 @@ module pri_icache_controller
 
 
 
-   enum logic [3:0] { DISABLED_ICACHE, BYPASS_DELAY, WAIT_REFILL_GNT, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, PREFETCH_TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
+   enum logic [2:0] { DISABLED_ICACHE, BYPASS_DELAY, WAIT_REFILL_GNT, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
 
    int unsigned i,j,index;
 
@@ -192,7 +192,7 @@ module pri_icache_controller
                          if(miss_counter_enable & ~miss_counter_enable_delay)
                            bank_miss_count_o <=  bank_miss_count_o + 1;
 
-                        if( update_lfsr & (&way_valid) )
+                        if( update_lfsr & (&way_valid[0]) )
                            eviction_counter <=  eviction_counter + 1;
                       end
                  end
@@ -272,8 +272,11 @@ genvar k;
 generate
    for(k=0; k<NB_WAYS; k++)
    begin : TAG_CHECK
-      assign way_valid[k]  = (TAG_rdata_i[k][SCM_TAG_WIDTH-1] == 1'b1);
-      assign way_match[k]  = (way_valid[k] && (TAG_rdata_i[k][SCM_TAG_WIDTH-2:0] == fetch_addr_Q[TAG_MSB:TAG_LSB]));
+      assign way_valid[0][k]  = (TAG_rdata_i[k][0][SCM_TAG_WIDTH-1] == 1'b1);
+      assign way_match[0][k]  = (way_valid[0][k] && (TAG_rdata_i[k][0][SCM_TAG_WIDTH-2:0] == fetch_addr_Q[TAG_MSB:TAG_LSB]));
+
+      assign way_valid[1][k]  = (TAG_rdata_i[k][1][SCM_TAG_WIDTH-1] == 1'b1);
+      assign way_match[1][k]  = (way_valid[1][k] && (TAG_rdata_i[k][1][SCM_TAG_WIDTH-2:0] == fetch_addr_P[TAG_MSB:TAG_LSB]));
    end
 endgenerate
 
@@ -281,7 +284,8 @@ always_comb
 begin
    TAG_req_o          = '0;
    TAG_we_o           = 1'b0;
-   TAG_addr_o         = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
+   TAG_addr_o[0]      = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
+   TAG_addr_o[1]      = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
    TAG_wdata_o        = {1'b1,fetch_addr_Q[TAG_MSB:TAG_LSB]};
 
    DATA_req_o         = '0;
@@ -390,7 +394,7 @@ begin
 
          TAG_req_o   = '1;
          TAG_we_o    = 1'b1;
-         TAG_addr_o  = counter_FLUSH_CS;
+         TAG_addr_o[0]  = counter_FLUSH_CS;
          TAG_wdata_o = '0;
       end //~FLUSH_ICACHE
 
@@ -405,7 +409,7 @@ begin
 
          TAG_req_o   = '1;
          TAG_we_o    = 1'b1;
-         TAG_addr_o  = flush_set_ID_addr_i[SET_ID_MSB:SET_ID_LSB];
+         TAG_addr_o[0]  = flush_set_ID_addr_i[SET_ID_MSB:SET_ID_LSB];
          TAG_wdata_o = '0;
       end //~FLUSH_SET_ID
 
@@ -435,9 +439,9 @@ begin
          else // NO Bypass ,FLUSH or SET_IF FLUSH request
            begin
               //Read the DATA nd TAG
-              TAG_req_o   = {NB_WAYS{fetch_req_i}};
+              TAG_req_o  = {NB_WAYS{1'b0, fetch_req_i}};
               TAG_we_o    = 1'b0;
-              TAG_addr_o  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
+              TAG_addr_o[0]  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
               DATA_req_o  = {NB_WAYS{fetch_req_i}};
               DATA_we_o   = 1'b0;
@@ -463,15 +467,16 @@ begin
           enable_pipe          = fetch_req_i;
 
           //Read the DATA nd TAG
-          TAG_req_o   = {NB_WAYS{1'b1}};
+          TAG_req_o   = {NB_WAYS{~fetch_req_i, fetch_req_i}};
           TAG_we_o    = 1'b0;
-          TAG_addr_o  = fetch_req_i ? fetch_addr_i[SET_ID_MSB:SET_ID_LSB] : fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
+          TAG_addr_o[0]  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
+          TAG_addr_o[1]  = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
 
           DATA_req_o  = {NB_WAYS{fetch_req_i}};
           DATA_we_o   = 1'b0;
           DATA_addr_o = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
-          if(|way_match)
+          if(|way_match[r_prefetching])
             begin : HIT
                hit_counter_enable = ~r_prefetching;
 
@@ -511,7 +516,7 @@ begin
                save_fetch_way   = 1'b1;
                // This check is postponed because thag Check is complex. better to do
                // one cycle later;
-               if(&way_valid) // all the lines are valid, invalidate one random line
+               if(&way_valid[0]) // all the lines are valid, invalidate one random line
                  begin
                     fetch_way_int = random_way;
                     update_lfsr = 1'b1;
@@ -533,16 +538,6 @@ begin
             end
        end //~TAG_LOOKUP
 
-     PREFETCH_TAG_LOOKUP:
-       begin
-          //Read the DATA nd TAG
-          TAG_req_o   = {NB_WAYS{1'b1}};
-          TAG_we_o    = 1'b0;
-          TAG_addr_o  = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
-
-          NS = TAG_LOOKUP;
-       end //~PREFETCH_TAG_LOOKUP
-
       WAIT_REFILL_GNT:
         begin
            enable_pipe      = 1'b0;
@@ -552,7 +547,7 @@ begin
            save_fetch_way   = 1'b1;
            // This check is postponed because thag Check is complex. better to do
            // one cycle later;
-           if(&way_valid) // all the lines are valid, invalidate one random line
+           if(&way_valid[0]) // all the lines are valid, invalidate one random line
              begin
                 fetch_way_int = random_way;
                 update_lfsr = 1'b1;
@@ -585,9 +580,10 @@ begin
          DATA_wdata_o    = refill_r_data_i;
          DATA_we_o       = 1'b1;
 
-         TAG_req_o       = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
+         for(int k=0; k<NB_WAYS; k++)
+           TAG_req_o[k]  = {1'b0, fetch_way_Q[k]} & {1'b0, refill_r_valid_i};
          TAG_we_o        = 1'b1;
-         TAG_addr_o      = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
+         TAG_addr_o[0]   = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
          TAG_wdata_o     = {1'b1,fetch_addr_Q[TAG_MSB:TAG_LSB]};
 
          if(refill_r_valid_i)
@@ -599,7 +595,7 @@ begin
               end
               else begin
                  prefetch_enable  = 1'b1;
-                 NS = PREFETCH_TAG_LOOKUP;
+                 NS = TAG_LOOKUP;
               end
            end // if (refill_r_valid_i)
          else
@@ -640,7 +636,7 @@ begin
 
    for(index=0;index<NB_WAYS;index++)
    begin
-      if(way_valid[index]==0)
+      if(way_valid[0][index]==0)
          first_available_way=index;
    end
 
@@ -649,7 +645,7 @@ begin
 
    for(index=0;index<NB_WAYS;index++)
    begin
-      if(way_match[index]==1)
+      if(way_match[0][index]==1)
          HIT_WAY=index;
    end
 

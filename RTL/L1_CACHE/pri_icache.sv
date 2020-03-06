@@ -117,17 +117,17 @@ module pri_icache
    logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
 
    // interface with READ PORT --> SCM TAG
-   logic [NB_WAYS-1:0]                    TAG_req_int;
+   logic [NB_WAYS-1:0][1:0]               TAG_req_int;
    logic                                  TAG_we_int;
-   logic [SCM_TAG_ADDR_WIDTH-1:0]         TAG_addr_int;
-   logic [NB_WAYS-1:0][TAG_WIDTH-1:0]     TAG_rdata_int;
+   logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]    TAG_addr_int;
+   logic [NB_WAYS-1:0][1:0][TAG_WIDTH-1:0]TAG_rdata_int;
    logic [TAG_WIDTH-1:0]                  TAG_wdata_int;
 
 
    logic [NB_WAYS-1:0]                    DATA_read_enable;
    logic [NB_WAYS-1:0]                    DATA_write_enable;
 
-   logic [NB_WAYS-1:0]                    TAG_read_enable;
+   logic [NB_WAYS-1:0][1:0]               TAG_read_enable;
    logic [NB_WAYS-1:0]                    TAG_write_enable;
 
    logic [31:0]                           refill_addr_int;
@@ -229,14 +229,15 @@ module pri_icache
       //    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝╚═╝     ╚═╝
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
-         assign TAG_read_enable[i]  = TAG_req_int[i] & ~TAG_we_int;
-         assign TAG_write_enable[i] = TAG_req_int[i] &  TAG_we_int;
+         assign TAG_read_enable[i][0]  = TAG_req_int[i][0] & ~TAG_we_int;
+         assign TAG_read_enable[i][1]  = TAG_req_int[1][1] & ~TAG_we_int;
+         assign TAG_write_enable[i] = TAG_req_int[i][0] &  TAG_we_int;
 
 
      `ifdef PULP_FPGA_EMUL
         register_file_1r_1w
      `else
-        register_file_1r_1w_test_wrap
+        register_file_1w_multi_port_read
      `endif
          #(
             .ADDR_WIDTH  ( SCM_TAG_ADDR_WIDTH ),
@@ -256,20 +257,8 @@ module pri_icache
 
             // Write port
             .WriteEnable ( TAG_write_enable[i] ),
-            .WriteAddr   ( TAG_addr_int        ),
+            .WriteAddr   ( TAG_addr_int[0]     ),
             .WriteData   ( TAG_wdata_int       )
-        `ifndef PULP_FPGA_EMUL
-            ,
-            // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
-
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .Q_T         (                     )
-        `endif
          );
       end
 
