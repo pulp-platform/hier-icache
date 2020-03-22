@@ -69,6 +69,12 @@ module pri_icache
    input  logic                           refill_r_valid_i,
    input  logic [FETCH_DATA_WIDTH-1:0]    refill_r_data_i,
 
+   output logic                           pre_refill_req_o,
+   input  logic                           pre_refill_gnt_i,
+   output logic [31:0]                    pre_refill_addr_o,
+   input  logic                           pre_refill_r_valid_i,
+   input  logic [FETCH_DATA_WIDTH-1:0]    pre_refill_r_data_i,
+
    input  logic                           enable_l1_l15_prefetch_i,
 
    input  logic                           bypass_icache_i,
@@ -117,7 +123,7 @@ module pri_icache
    logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
 
    // interface with READ PORT --> SCM TAG
-   logic [NB_WAYS-1:0][1:0]               TAG_req_int;
+   logic [1:0][NB_WAYS-1:0]               TAG_req_int;
    logic                                  TAG_we_int;
    logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]    TAG_addr_int;
    logic [NB_WAYS-1:0][1:0][TAG_WIDTH-1:0]TAG_rdata_int;
@@ -135,6 +141,12 @@ module pri_icache
    logic                                  refill_gnt_int;
    logic                                  refill_r_valid_int;
    logic [FETCH_DATA_WIDTH-1:0]           refill_r_data_int;
+
+   logic [31:0]                           pre_refill_addr_int;
+   logic                                  pre_refill_req_int;
+   logic                                  pre_refill_gnt_int;
+   logic                                  pre_refill_r_valid_int;
+   logic [FETCH_DATA_WIDTH-1:0]           pre_refill_r_data_int;
 
 
    //  ██████╗ █████╗  ██████╗██╗  ██╗███████╗         ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  ██████╗ ██╗     ██╗     ███████╗██████╗
@@ -209,10 +221,15 @@ module pri_icache
       .TAG_we_o                 ( TAG_we_int               ),
 
       // Interface to cache_controller_to Icache L1.5 port
+      .pre_refill_req_o         ( pre_refill_req_int       ),
+      .pre_refill_gnt_i         ( pre_refill_gnt_int       ),
+      .pre_refill_addr_o        ( pre_refill_addr_int      ),
+      .pre_refill_r_valid_i     ( pre_refill_r_valid_int   ),
+      .pre_refill_r_data_i      ( pre_refill_r_data_int    ),
+
       .refill_req_o             ( refill_req_int           ),
       .refill_gnt_i             ( refill_gnt_int           ),
       .refill_addr_o            ( refill_addr_int          ),
-
       .refill_r_valid_i         ( refill_r_valid_int       ),
       .refill_r_data_i          ( refill_r_data_int        )
    );
@@ -229,9 +246,9 @@ module pri_icache
       //    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝╚═╝     ╚═╝
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
-         assign TAG_read_enable[i][0]  = TAG_req_int[i][0] & ~TAG_we_int;
-         assign TAG_read_enable[i][1]  = TAG_req_int[1][1] & ~TAG_we_int;
-         assign TAG_write_enable[i] = TAG_req_int[i][0] &  TAG_we_int;
+         assign TAG_read_enable[i][0]  = TAG_req_int[0][i] & ~TAG_we_int;
+         assign TAG_read_enable[i][1]  = TAG_req_int[1][i] & ~TAG_we_int;
+         assign TAG_write_enable[i] = TAG_req_int[0][i] &  TAG_we_int;
 
 
      `ifdef PULP_FPGA_EMUL
@@ -246,10 +263,8 @@ module pri_icache
          TAG_BANK
          (
             .clk         ( clk          ),
-         `ifdef PULP_FPGA_EMUL
             .rst_n       ( rst_n        ),
-         `endif
-
+            .test_en_i   ( 1'b0         ),
             // Read port
             .ReadEnable  ( TAG_read_enable[i]  ),
             .ReadAddr    ( TAG_addr_int        ),
@@ -337,10 +352,34 @@ module pri_icache
          .grant_i       ( refill_gnt_i    ),
          .test_mode_i   ( test_en_i       )
       );
+
+      generic_fifo
+      #(
+         .DATA_WIDTH ( 32  ),
+         .DATA_DEPTH ( 2   )
+      )
+      pre_Refill_Req_Buffer
+      (
+         .clk           ( clk             ),
+         .rst_n         ( rst_n           ),
+
+         .data_i        ( pre_refill_addr_int ),
+         .valid_i       ( pre_refill_req_int  ),
+         .grant_o       ( pre_refill_gnt_int  ),
+
+         .data_o        ( pre_refill_addr_o   ),
+         .valid_o       ( pre_refill_req_o    ),
+         .grant_i       ( pre_refill_gnt_i    ),
+         .test_mode_i   ( test_en_i           )
+      );
 `else
      assign refill_addr_o  = refill_addr_int;
      assign refill_req_o   = refill_req_int;
      assign refill_gnt_int = refill_gnt_i;
+
+     assign pre_refill_addr_o  = pre_refill_addr_int;
+     assign pre_refill_req_o   = pre_refill_req_int;
+     assign pre_refill_gnt_int = pre_refill_gnt_i;
 `endif
 
 
@@ -364,9 +403,31 @@ module pri_icache
          .grant_i       ( 1'b1               ), // always grant it
          .test_mode_i   ( test_en_i          )
       );
+
+      generic_fifo
+      #(
+         .DATA_WIDTH ( FETCH_DATA_WIDTH   ),
+         .DATA_DEPTH ( 2                  )
+      )
+      Pre_refill_Resp_Buffer
+      (
+         .clk           ( clk                ),
+         .rst_n         ( rst_n              ),
+
+         .data_i        ( pre_refill_r_data_i    ),
+         .valid_i       ( pre_refill_r_valid_i   ),
+         .grant_o       (                        ), // nobody is listening
+
+         .data_o        ( pre_refill_r_data_int  ),
+         .valid_o       ( pre_refill_r_valid_int ),
+         .grant_i       ( 1'b1                   ), // always grant it
+         .test_mode_i   ( test_en_i              )
+      );
 `else
      assign refill_r_data_int    = refill_r_data_i;
      assign refill_r_valid_int   = refill_r_valid_i;
+     assign pre_refill_r_data_int    = pre_refill_r_data_i;
+     assign pre_refill_r_valid_int   = pre_refill_r_valid_i;
 `endif
 
 endmodule // fc_icache
