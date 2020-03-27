@@ -413,7 +413,6 @@ module pri_icache_controller
                  begin // Enable ICache
                     clear_pipe    = 1'b1;
                     fetch_gnt_o   = 1'b0;
-                    refill_req_o  = 1'b0;
                     NS            = FLUSH_ICACHE;
                  end
             end
