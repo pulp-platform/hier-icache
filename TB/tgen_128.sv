@@ -27,6 +27,8 @@ module tgen_128
    output logic                            eoc_o
 );
 
+   logic [15:0]                         RANDOM_ADD;
+
    int unsigned i, count_trans = 0;
    
    localparam N_TRANS = 10000000;
@@ -36,6 +38,7 @@ module tgen_128
    logic [31:0] address[N_TRANS];
 
    logic [1:0] delay_cnt;
+   logic [63:0] inst_num;
 
    initial
    begin
@@ -94,6 +97,7 @@ module tgen_128
       if(~rst_n) 
       begin
          CS <= IDLE;
+         inst_num <= '0;
          delay_cnt <= '0;
       end 
       else 
@@ -101,6 +105,9 @@ module tgen_128
           CS <= NS;
 
          delay_cnt <= delay_cnt + 1;
+
+         if(fetch_rvalid_i)
+           inst_num <= inst_num + 1;
       end
    end
 
@@ -144,16 +151,16 @@ module tgen_128
                 else
                 begin
                    if ($random() % 3 == 0) begin
-                    fetch_req_int   = 1'b1;
+                      fetch_req_int   = 1'b1;
 
-                    if(fetch_gnt_i)
-                    begin
-                       NS = WAIT_RVALID;
-                    end
-                    else
-                    begin
-                       NS = WAIT_GNT;
-                    end
+                      if(fetch_gnt_i)
+                        begin
+                           NS = WAIT_RVALID;
+                        end
+                      else
+                        begin
+                           NS = WAIT_GNT;
+                        end
                    end else begin
                       NS = DELAY_REQ;
                    end
@@ -178,6 +185,8 @@ module tgen_128
                   begin
                      NS = WAIT_GNT;
                   end
+             end else begin // if (delay_cnt == 3)
+                NS = DELAY_REQ;
              end
           end
 
@@ -195,6 +204,8 @@ module tgen_128
           NS = DONE;
           eoc_o = 1'b1;
          end
+        default:
+          NS = IDLE;
 
       endcase // CS
    end

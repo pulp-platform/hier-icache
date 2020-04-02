@@ -87,18 +87,18 @@ module pri_icache_controller
 
 
    // interface with READ PORT --> SCM DATA
-   output logic [NB_WAYS-1:0]                               DATA_req_o,
-   output logic                                             DATA_we_o,
-   output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_addr_o,
-   input  logic [NB_WAYS-1:0][SCM_DATA_WIDTH-1:0]           DATA_rdata_i,
-   output logic [FETCH_DATA_WIDTH-1:0]                      DATA_wdata_o,
+   output logic [1:0][NB_WAYS-1:0]                          DATA_req_o,
+   output logic [1:0]                                       DATA_we_o,
+   output logic [1:0][SCM_DATA_ADDR_WIDTH-1:0]              DATA_addr_o,
+   input  logic      [NB_WAYS-1:0][SCM_DATA_WIDTH-1:0]      DATA_rdata_i,
+   output logic [1:0][FETCH_DATA_WIDTH-1:0]                 DATA_wdata_o,
 
    // interface with READ PORT --> SCM TAG
    output logic [1:0][NB_WAYS-1:0]                          TAG_req_o,
    output logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]               TAG_addr_o,
-   input  logic [NB_WAYS-1:0][1:0][SCM_TAG_WIDTH-1:0]       TAG_rdata_i,
-   output logic [SCM_TAG_WIDTH-1:0]                         TAG_wdata_o,
-   output logic                                             TAG_we_o,
+   input  logic [1:0][NB_WAYS-1:0][SCM_TAG_WIDTH-1:0]       TAG_rdata_i,
+   output logic [1:0][SCM_TAG_WIDTH-1:0]                    TAG_wdata_o,
+   output logic [1:0]                                       TAG_we_o,
 
 
    // Interface to cache_controller_to uDMA L2 port
@@ -137,6 +137,8 @@ module pri_icache_controller
    logic [1:0]                                              fetch_req_C;
    logic                                                    prefetch_start;
    logic                                                    prefetch_hit;
+   logic                                                    prefetchc_tag_check_C;
+   logic                                                    prefetch_hit_C;
    logic                                                    prefetch_stop;
    logic                                                    is_branch;
 
@@ -162,15 +164,25 @@ module pri_icache_controller
 
    assign is_branch = (fetch_addr_i != fetch_addr_P);
 
-   assign DATA_req_o      = |DATA_req_int ? DATA_req_int   : DATA_req_q;
-   assign DATA_addr_o     = |DATA_req_int ? DATA_addr_int  : DATA_addr_q;
-   assign DATA_wdata_o    = |DATA_req_int ? DATA_wdata_int : DATA_wdata_q;
-   assign DATA_we_o       = |DATA_req_int ? DATA_we_int    : DATA_we_q;
+   assign DATA_req_o[0]      = DATA_req_int;
+   assign DATA_addr_o[0]     = DATA_addr_int;
+   assign DATA_wdata_o[0]    = DATA_wdata_int;
+   assign DATA_we_o[0]       = DATA_we_int;
 
-   assign TAG_req_o[0]   = |TAG_req_int ? TAG_req_int   : TAG_req_q;
-   assign TAG_addr_o[0]  = |TAG_req_int ? TAG_addr_int  : TAG_addr_q;
-   assign TAG_wdata_o    = |TAG_req_int ? TAG_wdata_int : TAG_wdata_q;
-   assign TAG_we_o       = |TAG_req_int ? TAG_we_int    : TAG_we_q;
+   assign DATA_req_o[1]      = DATA_req_q;
+   assign DATA_addr_o[1]     = DATA_addr_q;
+   assign DATA_wdata_o[1]    = DATA_wdata_q;
+   assign DATA_we_o[1]       = DATA_we_q;
+
+   assign TAG_req_o[0]   = TAG_req_int;
+   assign TAG_addr_o[0]  = TAG_addr_int;
+   assign TAG_wdata_o[0] = TAG_wdata_int;
+   assign TAG_we_o[0]    = TAG_we_int;
+
+   assign TAG_req_o[1]   = TAG_req_q;
+   assign TAG_addr_o[1]  = TAG_addr_q;
+   assign TAG_wdata_o[1] = TAG_wdata_q;
+   assign TAG_we_o[1]    = TAG_we_q;
 
    logic [SCM_TAG_ADDR_WIDTH-1:0]                           counter_FLUSH_NS, counter_FLUSH_CS;
 
@@ -288,6 +300,8 @@ module pri_icache_controller
              fetch_req_C    <= 2'b00;
              fetch_addr_C   <= '0;
 
+             prefetchc_tag_check_C <= 1'b0;
+             prefetch_hit_C <= 1'b0;
              prefetch_conflict_DATA_wdata <= '0;
           end
         else
@@ -304,11 +318,21 @@ module pri_icache_controller
 
                   fetch_req_C[1] <= fetch_req_C[0];
 
-                  if (fetch_req_i & prefetch_start) begin
+                  if (fetch_req_i & fetch_gnt_o & prefetch_start & ~prefetch_hit) begin
+                     fetch_req_C[1] <= fetch_req_C[1] ? 1'b0 : fetch_req_C[0];
                      fetch_req_C[0] <= 1'b1;
                      fetch_addr_C <= fetch_addr_i + 'h10;
                   end else if (prefetch_stop | prefetch_hit) begin
                     fetch_req_C[0] <= 1'b0;
+                  end
+
+                  // Check the next prefetch address hit or not
+                  if(prefetch_stop & fetch_req_C[0] & fetch_req_C[1]) begin
+                     prefetchc_tag_check_C <= 1'b1;
+                     prefetch_hit_C <= (|way_match[1]);
+                  end else begin
+                     prefetchc_tag_check_C <= 1'b0;
+                     prefetch_hit_C <= 1'b0;
                   end
 
                   if (fetch_req_i & ~prefetch_start) begin
@@ -329,6 +353,8 @@ module pri_icache_controller
                   fetch_req_C    <= 2'b00;
                   fetch_addr_C   <= '0;
 
+                  prefetchc_tag_check_C <= 1'b0;
+                  prefetch_hit_C <= 1'b0;
                   prefetch_conflict_DATA_wdata <= '0;
                end
           end
@@ -361,11 +387,11 @@ module pri_icache_controller
    generate
       for(k=0; k<NB_WAYS; k++)
         begin : TAG_CHECK
-           assign way_valid[0][k]  = (TAG_rdata_i[k][0][SCM_TAG_WIDTH-1] == 1'b1);
-           assign way_match[0][k]  = (way_valid[0][k] && (TAG_rdata_i[k][0][SCM_TAG_WIDTH-2:0] == fetch_addr_Q[TAG_MSB:TAG_LSB]));
+           assign way_valid[0][k]  = (TAG_rdata_i[0][k][SCM_TAG_WIDTH-1] == 1'b1);
+           assign way_match[0][k]  = (way_valid[0][k] && (TAG_rdata_i[0][k][SCM_TAG_WIDTH-2:0] == fetch_addr_Q[TAG_MSB:TAG_LSB]));
 
-           assign way_valid[1][k]  = (TAG_rdata_i[k][1][SCM_TAG_WIDTH-1] == 1'b1);
-           assign way_match[1][k]  = (way_valid[1][k] && (TAG_rdata_i[k][1][SCM_TAG_WIDTH-2:0] == fetch_addr_P[TAG_MSB:TAG_LSB]));
+           assign way_valid[1][k]  = (TAG_rdata_i[1][k][SCM_TAG_WIDTH-1] == 1'b1);
+           assign way_match[1][k]  = (way_valid[1][k] && (TAG_rdata_i[1][k][SCM_TAG_WIDTH-2:0] == ((fetch_req_C == 2'b11) ? fetch_addr_C[TAG_MSB:TAG_LSB] : fetch_addr_P[TAG_MSB:TAG_LSB])));
         end
    endgenerate
 
@@ -670,10 +696,6 @@ module pri_icache_controller
         // FSM
         PRE_NS           = PRE_CS;
 
-        // Prefetch read dual port
-        TAG_req_o[1]  = '0;
-        TAG_addr_o[1] = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
-
         // Select WAY
         fetch_way_p_int  = '0;
         save_fetch_way_p = '0;
@@ -683,7 +705,7 @@ module pri_icache_controller
         pre_refill_req_o  = 1'b0;
         pre_refill_addr_o = fetch_addr_P;
 
-        // Prefetch write single port
+        // Prefetch port
         DATA_req_q      = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
         DATA_addr_q     = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
         DATA_wdata_q    = pre_refill_r_data_i;
@@ -710,13 +732,38 @@ module pri_icache_controller
           PRE_IDLE:
             begin
                //Read the DATA and TAG
-               TAG_req_o[1]   = {NB_WAYS{(|fetch_req_C | fetch_req_P)}};
-               TAG_addr_o[1]  = (|fetch_req_C) ? fetch_addr_C[SET_ID_MSB:SET_ID_LSB] : fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
+               TAG_req_q   = {NB_WAYS{(|fetch_req_C | fetch_req_P)}};
+               TAG_addr_q  = (|fetch_req_C) ? fetch_addr_C[SET_ID_MSB:SET_ID_LSB] : fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
 
                if (bypass_icache_i | ~enable_l1_l15_prefetch_i) begin
                   PRE_NS = PRE_DISABLE;
-               end else if ((|fetch_req_C | fetch_req_P) & ~fetch_req_i) begin
-                  PRE_NS = PRE_TAG_LOOKUP;
+               end if ((|fetch_req_C | fetch_req_P)) begin
+                  if (prefetchc_tag_check_C & ~prefetch_hit_C) begin
+                     prefetch_start = 1'b1;
+                     pre_refill_req_o  = 1'b1;
+
+                     save_fetch_way_p   = 1'b1;
+                     // This check is postponed because the tag Check is complex. better to do
+                     // one cycle later;
+                     if(&way_valid[1]) // all the lines are valid, invalidate one random line
+                       begin
+                          fetch_way_p_int = random_way;
+                          update_lfsr_p = 1'b1;
+                       end
+                     else
+                       begin
+                          fetch_way_p_int = first_available_way_p_OH;
+                          update_lfsr_p = 1'b0;
+                       end
+
+                     if(pre_refill_gnt_i)
+                       PRE_NS = PRE_WAIT_REFILL_DONE;
+                     else
+                       PRE_NS = PRE_WAIT_REFILL_GNT;
+                  end else if (~fetch_req_i)
+                    PRE_NS = PRE_TAG_LOOKUP;
+                  else
+                    PRE_NS = PRE_IDLE;
                end else begin
                   PRE_NS = PRE_IDLE;
                end
@@ -763,6 +810,10 @@ module pri_icache_controller
 
                pre_refill_req_o  = 1'b1;
 
+               TAG_req_q       = {NB_WAYS{fetch_req_C[0] & ~fetch_req_C[1]}};
+               TAG_we_q        = 1'b0;
+               TAG_addr_q      = fetch_addr_C[SET_ID_MSB:SET_ID_LSB];
+
                if(pre_refill_gnt_i)
                  PRE_NS = PRE_WAIT_REFILL_DONE;
                else
@@ -771,18 +822,22 @@ module pri_icache_controller
 
           PRE_WAIT_REFILL_DONE:
             begin
-
-               DATA_we_q       = 1'b1;
-               TAG_we_q        = 1'b1;
-
                if(pre_refill_r_valid_i) begin
-                  prefetch_stop    = 1'b1;
+                  TAG_we_q        = 1'b1;
+                  DATA_we_q       = 1'b1;
+
+                  prefetch_stop   = 1'b1;
                   PRE_NS = PRE_IDLE;
                end else begin
+                  TAG_req_q       = {NB_WAYS{fetch_req_C[0] & ~fetch_req_C[1]}};
+                  TAG_we_q        = 1'b0;
+                  TAG_addr_q      = fetch_addr_C[SET_ID_MSB:SET_ID_LSB];
+
                   prefetch_start = 1'b1;
                   PRE_NS = PRE_WAIT_REFILL_DONE;
                end
             end
+
           default:
             begin
                PRE_NS = PRE_DISABLE;

@@ -116,25 +116,20 @@ module pri_icache
 
 
    // interface with READ PORT --> SCM DATA
-   logic [NB_WAYS-1:0]                    DATA_req_int;
-   logic                                  DATA_we_int;
-   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_addr_int;
-   logic [NB_WAYS-1:0][DATA_WIDTH-1:0]    DATA_rdata_int;
-   logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
+   logic [1:0][NB_WAYS-1:0]                DATA_req_int;
+   logic [1:0]                             DATA_we_int;
+   logic [1:0][SCM_DATA_ADDR_WIDTH-1:0]    DATA_addr_int;
+   logic      [NB_WAYS-1:0][DATA_WIDTH-1:0]DATA_rdata_int;
+   logic [1:0][DATA_WIDTH-1:0]             DATA_wdata_int;
 
    // interface with READ PORT --> SCM TAG
    logic [1:0][NB_WAYS-1:0]               TAG_req_int;
-   logic                                  TAG_we_int;
+   logic [1:0]                            TAG_we_int;
    logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]    TAG_addr_int;
-   logic [NB_WAYS-1:0][1:0][TAG_WIDTH-1:0]TAG_rdata_int;
-   logic [TAG_WIDTH-1:0]                  TAG_wdata_int;
+   logic [1:0][NB_WAYS-1:0][TAG_WIDTH-1:0]TAG_rdata_int;
+   logic [1:0][TAG_WIDTH-1:0]             TAG_wdata_int;
 
 
-   logic [NB_WAYS-1:0]                    DATA_read_enable;
-   logic [NB_WAYS-1:0]                    DATA_write_enable;
-
-   logic [NB_WAYS-1:0][1:0]               TAG_read_enable;
-   logic [NB_WAYS-1:0]                    TAG_write_enable;
 
    logic [31:0]                           refill_addr_int;
    logic                                  refill_req_int;
@@ -246,16 +241,8 @@ module pri_icache
       //    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝╚═╝     ╚═╝
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
-         assign TAG_read_enable[i][0]  = TAG_req_int[0][i] & ~TAG_we_int;
-         assign TAG_read_enable[i][1]  = TAG_req_int[1][i] & ~TAG_we_int;
-         assign TAG_write_enable[i] = TAG_req_int[0][i] &  TAG_we_int;
 
-
-     `ifdef PULP_FPGA_EMUL
-        register_file_1r_1w
-     `else
-        register_file_1w_multi_port_read
-     `endif
+        register_file_2r_2w
          #(
             .ADDR_WIDTH  ( SCM_TAG_ADDR_WIDTH ),
             .DATA_WIDTH  ( TAG_WIDTH          )
@@ -264,16 +251,24 @@ module pri_icache
          (
             .clk         ( clk          ),
             .rst_n       ( rst_n        ),
-            .test_en_i   ( 1'b0         ),
+
             // Read port
-            .ReadEnable  ( TAG_read_enable[i]  ),
-            .ReadAddr    ( TAG_addr_int        ),
-            .ReadData    ( TAG_rdata_int[i]    ),
+            .ren_a_i     ( TAG_req_int[0][i] & ~TAG_we_int[0] ),
+            .raddr_a_i   ( TAG_addr_int[0]     ),
+            .rdata_a_o   ( TAG_rdata_int[0][i] ),
+
+            .ren_b_i     ( TAG_req_int[1][i] & ~TAG_we_int[1] ),
+            .raddr_b_i   ( TAG_addr_int[1]     ),
+            .rdata_b_o   ( TAG_rdata_int[1][i] ),
 
             // Write port
-            .WriteEnable ( TAG_write_enable[i] ),
-            .WriteAddr   ( TAG_addr_int[0]     ),
-            .WriteData   ( TAG_wdata_int       )
+            .we_a_i      ( TAG_req_int[0][i] & TAG_we_int[0] ),
+            .waddr_a_i   ( TAG_addr_int[0]     ),
+            .wdata_a_i   ( TAG_wdata_int[0]    ),
+
+            .we_b_i      ( TAG_req_int[1][i] & TAG_we_int[1] ),
+            .waddr_b_i   ( TAG_addr_int[1]     ),
+            .wdata_b_i   ( TAG_wdata_int[1]    )
          );
       end
 
@@ -287,14 +282,8 @@ module pri_icache
 
       for(i=0; i<NB_WAYS; i++)
       begin : _DATA_WAY_
-         assign DATA_read_enable[i]  = DATA_req_int[i] & ~DATA_we_int;
-         assign DATA_write_enable[i] = DATA_req_int[i] & DATA_we_int;
 
-     `ifdef PULP_FPGA_EMUL
-         register_file_1r_1w
-     `else
-         register_file_1r_1w_test_wrap
-     `endif
+        register_file_2r_2w
          #(
             .ADDR_WIDTH  ( SCM_DATA_ADDR_WIDTH ),
             .DATA_WIDTH  ( DATA_WIDTH         )
@@ -302,31 +291,25 @@ module pri_icache
          DATA_BANK
          (
             .clk         ( clk          ),
-         `ifdef PULP_FPGA_EMUL
             .rst_n       ( rst_n        ),
-         `endif
 
             // Read port
-            .ReadEnable  ( DATA_read_enable[i]   ),
-            .ReadAddr    ( DATA_addr_int         ),
-            .ReadData    ( DATA_rdata_int[i]     ),
+            .ren_a_i     ( DATA_req_int[0][i] & ~DATA_we_int[0] ),
+            .raddr_a_i   ( DATA_addr_int[0]     ),
+            .rdata_a_o   ( DATA_rdata_int[i] ),
+
+            .ren_b_i     ( 1'b0 ),
+            .raddr_b_i   ( '0   ),
+            .rdata_b_o   (      ),
 
             // Write port
-            .WriteEnable ( DATA_write_enable[i]  ),
-            .WriteAddr   ( DATA_addr_int         ),
-            .WriteData   ( DATA_wdata_int        )
-        `ifndef PULP_FPGA_EMUL
-            ,
-            // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+            .we_a_i      ( DATA_req_int[0][i] & DATA_we_int[0] ),
+            .waddr_a_i   ( DATA_addr_int[0]     ),
+            .wdata_a_i   ( DATA_wdata_int[0]    ),
 
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .Q_T         (                     )
-        `endif
+            .we_b_i      ( DATA_req_int[1][i] & DATA_we_int[1] ),
+            .waddr_b_i   ( DATA_addr_int[1]     ),
+            .wdata_b_i   ( DATA_wdata_int[1]    )
          );
       end
    endgenerate
