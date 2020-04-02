@@ -304,7 +304,7 @@ module pri_icache_controller
 
                   fetch_req_C[1] <= fetch_req_C[0];
 
-                  if (fetch_req_i & prefetch_start & is_branch) begin
+                  if (fetch_req_i & prefetch_start) begin
                      fetch_req_C[0] <= 1'b1;
                      fetch_addr_C <= fetch_addr_i + 'h10;
                   end else if (prefetch_stop | prefetch_hit) begin
@@ -513,10 +513,8 @@ module pri_icache_controller
                  begin
                     //Read the DATA and TAG
                     TAG_req_int   = {NB_WAYS{fetch_req_i}};
-                    TAG_addr_int  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
                     DATA_req_int  = {NB_WAYS{fetch_req_i}};
-                    DATA_addr_int = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
                     enable_pipe = fetch_req_i;
 
@@ -574,10 +572,8 @@ module pri_icache_controller
 
                //Read the DATA and TAG
                TAG_req_int   = {NB_WAYS{fetch_req_i}};
-               TAG_addr_int  = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
                DATA_req_int  = {NB_WAYS{fetch_req_i}};
-               DATA_addr_int = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
 
                if(|way_match[0])
                  begin : HIT
@@ -642,7 +638,6 @@ module pri_icache_controller
 
                DATA_req_int      = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
                DATA_addr_int     = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
-               DATA_wdata_int    = refill_r_data_i;
                DATA_we_int       = 1'b1;
 
                TAG_req_int       = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
@@ -740,7 +735,6 @@ module pri_icache_controller
                else
                  begin : PRE_MISS
                     pre_refill_req_o  = 1'b1;
-                    pre_refill_addr_o = fetch_addr_P;
 
                     save_fetch_way_p   = 1'b1;
                     // This check is postponed because the tag Check is complex. better to do
@@ -768,7 +762,6 @@ module pri_icache_controller
                prefetch_start = 1'b1;
 
                pre_refill_req_o  = 1'b1;
-               pre_refill_addr_o = fetch_addr_P;
 
                if(pre_refill_gnt_i)
                  PRE_NS = PRE_WAIT_REFILL_DONE;
