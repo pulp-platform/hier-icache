@@ -33,7 +33,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-module register_file_2r_2w
+module register_file_2r_2w_icache
 #(
     parameter ADDR_WIDTH    = 5,
     parameter DATA_WIDTH    = 32

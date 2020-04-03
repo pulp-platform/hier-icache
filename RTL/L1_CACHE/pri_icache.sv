@@ -242,7 +242,7 @@ module pri_icache
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
 
-        register_file_2r_2w
+        register_file_2r_2w_icache
          #(
             .ADDR_WIDTH  ( SCM_TAG_ADDR_WIDTH ),
             .DATA_WIDTH  ( TAG_WIDTH          )
@@ -283,7 +283,7 @@ module pri_icache
       for(i=0; i<NB_WAYS; i++)
       begin : _DATA_WAY_
 
-        register_file_2r_2w
+        register_file_2r_2w_icache
          #(
             .ADDR_WIDTH  ( SCM_DATA_ADDR_WIDTH ),
             .DATA_WIDTH  ( DATA_WIDTH         )
