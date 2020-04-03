@@ -201,7 +201,7 @@ module pri_icache_controller
    assign first_available_way_OH   = logic_nbways'(1 << first_available_way);
    assign first_available_way_p_OH = logic_nbways'(1 << first_available_way_p);
 
-   enum                                                     logic [3:0] { DISABLED_ICACHE, BYPASS_DELAY, CONFLICT_REFILL, WAIT_PREFETCH, WAIT_REFILL_GNT, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
+   enum                                                     logic [3:0] { DISABLED_ICACHE, BYPASS_REFILL, BYPASS_WAIT_REFILL_DONE, CONFLICT_REFILL, WAIT_PREFETCH, WAIT_REFILL_GNT, WAIT_REFILL_DONE, IDLE_ENABLED, TAG_LOOKUP, FLUSH_ICACHE, FLUSH_SET_ID } CS, NS;
    enum                                                     logic [2:0] { PRE_DISABLE, PRE_IDLE, PRE_TAG_LOOKUP, PRE_WAIT_REFILL_GNT, PRE_WAIT_REFILL_DONE } PRE_CS, PRE_NS;
 
    int unsigned                                             i,j,index;
@@ -368,7 +368,7 @@ module pri_icache_controller
           end
         else
           begin
-             if( CS == DISABLED_ICACHE || CS == BYPASS_DELAY) begin
+             if( CS == DISABLED_ICACHE || CS == BYPASS_WAIT_REFILL_DONE) begin
                 //Use this code to be sure thhat there is not apending transaction when enable cache request is asserted
                 case({fetch_req_i & fetch_gnt_o , refill_r_valid_i})
                   2'b00: begin refill_wait_bypass <= refill_wait_bypass;      end
@@ -453,7 +453,7 @@ module pri_icache_controller
                        fetch_gnt_o  = fetch_req_i;
 
                        if(fetch_req_i)
-                         NS = BYPASS_DELAY;
+                         NS = BYPASS_REFILL;
                        else
                          NS = DISABLED_ICACHE;
                     end
@@ -466,7 +466,7 @@ module pri_icache_controller
                  end
             end
 
-          BYPASS_DELAY:
+          BYPASS_REFILL:
             begin
                flush_set_ID_ack_o  = 1'b1;
 
@@ -474,14 +474,32 @@ module pri_icache_controller
                clear_pipe          = 1'b1;
                cache_is_bypassed_o = 1'b1;
                cache_is_flushed_o  = 1'b1;
-               fetch_rdata_o       = refill_r_data_i;
-               fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
 
                refill_req_o        = 1'b1;
                refill_addr_o       = fetch_addr_Q;
 
                if(refill_gnt_i)
+                 NS = BYPASS_WAIT_REFILL_DONE;
+               else
+                 NS = BYPASS_REFILL;
+            end
+
+          BYPASS_WAIT_REFILL_DONE:
+            begin
+               flush_set_ID_ack_o  = 1'b1;
+
+               counter_FLUSH_NS    = '0;
+               clear_pipe          = 1'b1;
+               cache_is_bypassed_o = 1'b1;
+               cache_is_flushed_o  = 1'b1;
+
+               fetch_rdata_o       = refill_r_data_i;
+               fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
+
+               if(refill_r_valid_i)
                  NS = DISABLED_ICACHE;
+               else
+                 NS = BYPASS_WAIT_REFILL_DONE;
             end
 
           FLUSH_ICACHE:

@@ -114,10 +114,6 @@ add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[0]} {/tb/DUT/PRI_ICACHE[0]/i_pri_icache/refill_gnt_int}
@@ -214,10 +210,6 @@ add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[1]} {/tb/DUT/PRI_ICACHE[1]/i_pri_icache/refill_gnt_int}
@@ -254,10 +246,6 @@ add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[2]} {/tb/DUT/PRI_ICACHE[2]/i_pri_icache/refill_gnt_int}
@@ -294,10 +282,6 @@ add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[3]} {/tb/DUT/PRI_ICACHE[3]/i_pri_icache/refill_gnt_int}
@@ -334,10 +318,6 @@ add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[4]} {/tb/DUT/PRI_ICACHE[4]/i_pri_icache/refill_gnt_int}
@@ -374,10 +354,6 @@ add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[5]} {/tb/DUT/PRI_ICACHE[5]/i_pri_icache/refill_gnt_int}
@@ -414,10 +390,6 @@ add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[6]} {/tb/DUT/PRI_ICACHE[6]/i_pri_icache/refill_gnt_int}
@@ -454,10 +426,6 @@ add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_we
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_addr_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_rdata_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_wdata_int}
-add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/DATA_read_enable}
-add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/DATA_write_enable}
-add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_read_enable}
-add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/TAG_write_enable}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_addr_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_req_int}
 add wave -noupdate -group {PRI_CB[7]} {/tb/DUT/PRI_ICACHE[7]/i_pri_icache/refill_gnt_int}

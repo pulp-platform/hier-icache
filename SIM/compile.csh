@@ -21,7 +21,7 @@ cd ../SIM
 
  vlog -quiet -sv ../RTL/L1_CACHE/pri_icache_controller.sv
  vlog -quiet -sv ../RTL/L1_CACHE/pri_icache.sv
- vlog -quiet -sv ../RTL/L1_CACHE/register_file_2r_2w.sv
+ vlog -quiet -sv ../RTL/L1_CACHE/register_file_2r_2w_icache.sv
 
  vlog -quiet -sv ../RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache.sv
