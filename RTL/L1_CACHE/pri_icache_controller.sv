@@ -274,7 +274,9 @@ module pri_icache_controller
              CS <= NS;
              counter_FLUSH_CS <= counter_FLUSH_NS;
 
-             if(save_fetch_way)
+             if (CS == IDLE_ENABLED)
+               fetch_way_Q <= '0;
+             else if(save_fetch_way)
                fetch_way_Q <= fetch_way_int;
 
              if(enable_pipe)
