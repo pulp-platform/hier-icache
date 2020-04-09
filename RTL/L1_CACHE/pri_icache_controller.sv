@@ -87,8 +87,8 @@ module pri_icache_controller
 
 
    // interface with READ PORT --> SCM DATA
-   output logic [NB_WAYS-1:0]                               DATA_req_o,
-   output logic                                             DATA_we_o,
+   output logic [NB_WAYS-1:0]                               DATA_rd_req_o,
+   output logic [NB_WAYS-1:0]                               DATA_wr_req_o,
    output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_addr_o,
    input  logic [NB_WAYS-1:0][SCM_DATA_WIDTH-1:0]           DATA_rdata_i,
    output logic [FETCH_DATA_WIDTH-1:0]                      DATA_wdata_o,
@@ -142,8 +142,9 @@ module pri_icache_controller
    logic                                                    prefetch_stop;
    logic                                                    is_branch;
 
+   logic [NB_WAYS-1:0]                                      DATA_rd_req_int;
+   logic [NB_WAYS-1:0]                                      DATA_wr_req_int;
    logic [NB_WAYS-1:0]                                      DATA_req_int;
-   logic                                                    DATA_we_int;
    logic [SCM_DATA_ADDR_WIDTH-1:0]                          DATA_addr_int;
    logic [FETCH_DATA_WIDTH-1:0]                             DATA_wdata_int;
    logic [NB_WAYS-1:0]                                      TAG_rd_req_int;
@@ -151,8 +152,7 @@ module pri_icache_controller
    logic [SCM_TAG_ADDR_WIDTH-1:0]                           TAG_addr_int;
    logic [SCM_TAG_WIDTH-1:0]                                TAG_wdata_int;
 
-   logic [NB_WAYS-1:0]                                      DATA_req_q;
-   logic                                                    DATA_we_q;
+   logic [NB_WAYS-1:0]                                      DATA_wr_req_q;
    logic [SCM_DATA_ADDR_WIDTH-1:0]                          DATA_addr_q;
    logic [FETCH_DATA_WIDTH-1:0]                             DATA_wdata_q;
    logic [NB_WAYS-1:0]                                      TAG_rd_req_q;
@@ -164,10 +164,11 @@ module pri_icache_controller
 
    assign is_branch = (fetch_addr_i != fetch_addr_P);
 
-   assign DATA_req_o      = |DATA_req_int ? DATA_req_int   : DATA_req_q;
+   assign DATA_req_int    = (DATA_rd_req_int | DATA_wr_req_int);
+   assign DATA_rd_req_o   = DATA_rd_req_int;
+   assign DATA_wr_req_o   = |DATA_req_int ? DATA_wr_req_int: DATA_wr_req_q;
    assign DATA_addr_o     = |DATA_req_int ? DATA_addr_int  : DATA_addr_q;
    assign DATA_wdata_o    = |DATA_req_int ? DATA_wdata_int : DATA_wdata_q;
-   assign DATA_we_o       = |DATA_req_int ? DATA_we_int    : DATA_we_q;
 
    assign TAG_rd_req_o[0] = TAG_rd_req_int;
    assign TAG_wr_req_o[0] = TAG_wr_req_int;
@@ -392,15 +393,15 @@ module pri_icache_controller
 
    always_comb
      begin : FETCH
-        TAG_rd_req_int       = '0;
+        TAG_rd_req_int       = {NB_WAYS{fetch_req_i}};
         TAG_wr_req_int       = '0;
         TAG_addr_int         = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
         TAG_wdata_int        = {1'b1,fetch_addr_Q[TAG_MSB:TAG_LSB]};
 
-        DATA_req_int         = '0;
+        DATA_rd_req_int      = {NB_WAYS{fetch_req_i}};
+        DATA_wr_req_int      = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
         DATA_addr_int        = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
         DATA_wdata_int       = refill_r_data_i;
-        DATA_we_int          = 1'b0;
 
         fetch_gnt_o        = 1'b0;
         fetch_rvalid_o     = 1'b0;
@@ -549,10 +550,6 @@ module pri_icache_controller
                else // NO Bypass ,FLUSH or SET_IF FLUSH request
                  begin
                     //Read the DATA and TAG
-                    TAG_rd_req_int  = {NB_WAYS{fetch_req_i}};
-
-                    DATA_req_int  = {NB_WAYS{fetch_req_i}};
-
                     enable_pipe = fetch_req_i;
 
                     if(fetch_req_i)
@@ -608,9 +605,6 @@ module pri_icache_controller
                enable_pipe          = fetch_req_i;
 
                //Read the DATA and TAG
-               TAG_rd_req_int  = {NB_WAYS{fetch_req_i}};
-
-               DATA_req_int  = {NB_WAYS{fetch_req_i}};
 
                if(|way_match[0])
                  begin : HIT
@@ -673,9 +667,7 @@ module pri_icache_controller
                fetch_rdata_o   = refill_r_data_i;
                fetch_rvalid_o  = refill_r_valid_i;
 
-               DATA_req_int      = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
                DATA_addr_int     = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
-               DATA_we_int       = 1'b1;
 
                TAG_wr_req_int    = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
                TAG_addr_int      = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
@@ -716,12 +708,11 @@ module pri_icache_controller
         pre_refill_addr_o = fetch_addr_P;
 
         // Prefetch write single port
-        DATA_req_q      = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
+        DATA_wr_req_q   = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
         DATA_addr_q     = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
         DATA_wdata_q    = pre_refill_r_data_i;
-        DATA_we_q       = 1'b0;
         TAG_rd_req_q    = '0;
-        TAG_wr_req_q    = '0;
+        TAG_wr_req_q    = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
         TAG_addr_q      = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
         TAG_wdata_q     = {1'b1,fetch_addr_P[TAG_MSB:TAG_LSB]};
 
@@ -832,9 +823,6 @@ module pri_icache_controller
           PRE_WAIT_REFILL_DONE:
             begin
                if(pre_refill_r_valid_i) begin
-                  TAG_wr_req_q    = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
-                  DATA_we_q       = 1'b1;
-
                   prefetch_stop   = 1'b1;
                   PRE_NS = PRE_IDLE;
                end else begin

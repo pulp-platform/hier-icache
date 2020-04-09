@@ -116,8 +116,8 @@ module pri_icache
 
 
    // interface with READ PORT --> SCM DATA
-   logic [NB_WAYS-1:0]                    DATA_req_int;
-   logic                                  DATA_we_int;
+   logic [NB_WAYS-1:0]                    DATA_rd_req_int;
+   logic [NB_WAYS-1:0]                    DATA_wr_req_int;
    logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_addr_int;
    logic [NB_WAYS-1:0][DATA_WIDTH-1:0]    DATA_rdata_int;
    logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
@@ -128,9 +128,6 @@ module pri_icache
    logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]    TAG_addr_int;
    logic [1:0][NB_WAYS-1:0][TAG_WIDTH-1:0]TAG_rdata_int;
    logic [1:0][TAG_WIDTH-1:0]             TAG_wdata_int;
-
-   logic [NB_WAYS-1:0]                    DATA_read_enable;
-   logic [NB_WAYS-1:0]                    DATA_write_enable;
 
    logic [31:0]                           refill_addr_int;
    logic                                  refill_req_int;
@@ -203,8 +200,8 @@ module pri_icache
 
 
       // interface with READ PORT --> SCM DATA
-      .DATA_req_o               ( DATA_req_int             ),
-      .DATA_we_o                ( DATA_we_int              ),
+      .DATA_rd_req_o            ( DATA_rd_req_int          ),
+      .DATA_wr_req_o            ( DATA_wr_req_int          ),
       .DATA_addr_o              ( DATA_addr_int            ),
       .DATA_rdata_i             ( DATA_rdata_int           ),
       .DATA_wdata_o             ( DATA_wdata_int           ),
@@ -283,8 +280,6 @@ module pri_icache
 
       for(i=0; i<NB_WAYS; i++)
       begin : _DATA_WAY_
-         assign DATA_read_enable[i]  = DATA_req_int[i] & ~DATA_we_int;
-         assign DATA_write_enable[i] = DATA_req_int[i] & DATA_we_int;
 
      `ifdef PULP_FPGA_EMUL
          register_file_1r_1w
@@ -303,12 +298,12 @@ module pri_icache
          `endif
 
             // Read port
-            .ReadEnable  ( DATA_read_enable[i]   ),
+            .ReadEnable  ( DATA_rd_req_int[i]    ),
             .ReadAddr    ( DATA_addr_int         ),
             .ReadData    ( DATA_rdata_int[i]     ),
 
             // Write port
-            .WriteEnable ( DATA_write_enable[i]  ),
+            .WriteEnable ( DATA_wr_req_int[i]    ),
             .WriteAddr   ( DATA_addr_int         ),
             .WriteData   ( DATA_wdata_int        )
         `ifndef PULP_FPGA_EMUL
