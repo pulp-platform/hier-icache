@@ -240,7 +240,11 @@ module pri_icache
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
 
+`ifndef PULP_FPGA_EMUL
         register_file_2r_2w_icache
+`else
+        register_file_2r_2w_fpga
+`endif
          #(
             .ADDR_WIDTH  ( SCM_TAG_ADDR_WIDTH ),
             .DATA_WIDTH  ( TAG_WIDTH          )

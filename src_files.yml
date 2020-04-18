@@ -17,3 +17,14 @@ hier-icache:
     CTRL_UNIT/hier_icache_ctrl_unit.sv,
     CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv,
   ]
+
+regfile_fpga :
+   targets: [
+   xilinx,
+   ]
+
+   files: [
+
+   RTL/L1_CACHE/register_file_2r_2w_fpga.sv
+
+   ]
