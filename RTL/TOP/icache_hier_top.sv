@@ -44,18 +44,19 @@
 module icache_hier_top
 #(
    parameter FETCH_ADDR_WIDTH  = 32,
-   parameter FETCH_DATA_WIDTH  = 128,
+   parameter PRI_FETCH_DATA_WIDTH = 32,
+   parameter SH_FETCH_DATA_WIDTH  = 128,
 
    parameter NB_CORES          = 9,
 
    parameter SH_NB_BANKS       = 2,
    parameter SH_NB_WAYS        = 4,
    parameter SH_CACHE_SIZE     = 4*1024, // in Byte
-   parameter SH_CACHE_LINE     = 1,       // in word of [FETCH_DATA_WIDTH]
+   parameter SH_CACHE_LINE     = 1,       // in word of [SH_FETCH_DATA_WIDTH]
 
    parameter PRI_NB_WAYS       = 2,
    parameter PRI_CACHE_SIZE    = 512,       // in Byte
-   parameter PRI_CACHE_LINE    = 1,         // in word of [FETCH_DATA_WIDTH]
+   parameter PRI_CACHE_LINE    = 1,         // in word of [PRI_FETCH_DATA_WIDTH]
 
    parameter AXI_ID            = 6,
    parameter AXI_ADDR          = 32,
@@ -76,7 +77,7 @@ module icache_hier_top
    output logic [NB_CORES-1:0]                          fetch_gnt_o,
 
    output logic [NB_CORES-1:0]                          fetch_rvalid_o,
-   output logic [NB_CORES-1:0][FETCH_DATA_WIDTH-1:0]    fetch_rdata_o,
+   output logic [NB_CORES-1:0][PRI_FETCH_DATA_WIDTH-1:0]fetch_rdata_o,
 
 
 
@@ -149,31 +150,21 @@ module icache_hier_top
    logic [2*NB_CORES-1:0]                                 refill_gnt_int;
    logic [2*NB_CORES-1:0] [FETCH_ADDR_WIDTH-1:0]          refill_addr_int;
    logic [2*NB_CORES-1:0]                                 refill_r_valid_int;
-   logic [2*NB_CORES-1:0] [FETCH_DATA_WIDTH-1:0]          refill_r_data_int;
-
-   // to LINT2AXI
-   logic                                                refill_to_AXINODE_req_int;
-   logic                                                refill_to_AXINODE_gnt_int;
-   logic  [FETCH_ADDR_WIDTH-1:0]                        refill_to_AXINODE_addr_int;
-   logic                                                refill_to_AXINODE_r_valid_int;
-   logic  [FETCH_DATA_WIDTH-1:0]                        refill_to_AXINODE_r_data_int;
-
-
-
+   logic [2*NB_CORES-1:0] [SH_FETCH_DATA_WIDTH-1:0]       refill_r_data_int;
 
    // signal from icache-int to main icache
    logic [SH_NB_BANKS-1:0]                              fetch_req_to_main_cache;
    logic [SH_NB_BANKS-1:0][FETCH_ADDR_WIDTH-1:0]        fetch_addr_to_main_cache;
    logic [SH_NB_BANKS-1:0][2*NB_CORES-1:0]              fetch_ID_to_main_cache;
    logic [SH_NB_BANKS-1:0]                              fetch_gnt_from_main_cache;
-   logic [SH_NB_BANKS-1:0][FETCH_DATA_WIDTH-1:0]        fetch_rdata_from_main_cache;
+   logic [SH_NB_BANKS-1:0][SH_FETCH_DATA_WIDTH-1:0]     fetch_rdata_from_main_cache;
    logic [SH_NB_BANKS-1:0]                              fetch_rvalid_from_to_main_cache;
    logic [SH_NB_BANKS-1:0][2*NB_CORES-1:0]              fetch_rID_from_main_cache;
 
    // signal from icache-sh banks to axi node
    localparam  AXI_ID_INT  =  1;
    localparam  AXI_ID_OUT  =  $clog2(SH_NB_BANKS) + AXI_ID_INT;
-   localparam  ADDR_OFFSET =  $clog2(FETCH_DATA_WIDTH)-3;
+   localparam  ADDR_OFFSET =  $clog2(SH_FETCH_DATA_WIDTH)-3;
 
    logic [SH_NB_BANKS-1:0][AXI_ID_INT-1:0]             axi_master_awid_int;
    logic [SH_NB_BANKS-1:0][AXI_ADDR-1:0]               axi_master_awaddr_int;
@@ -318,11 +309,12 @@ module icache_hier_top
          pri_icache
          #(
             .FETCH_ADDR_WIDTH     ( FETCH_ADDR_WIDTH ), //= 32,       // Size of the fetch address
-            .FETCH_DATA_WIDTH     ( FETCH_DATA_WIDTH ), //= 128,      // Size of the fetch data
+            .FETCH_DATA_WIDTH     ( PRI_FETCH_DATA_WIDTH ), //= 128,      // Size of the fetch data
+            .REFILL_DATA_WIDTH    ( SH_FETCH_DATA_WIDTH  ), //= 128,      // Size of the fetch data
 
             .NB_WAYS              ( PRI_NB_WAYS      ), //= 4,        // Cache associativity
             .CACHE_SIZE           ( PRI_CACHE_SIZE   ), //= 512      // Ccache capacity in Byte
-            .CACHE_LINE           ( PRI_CACHE_LINE   ), //= 1,        // in word of [FETCH_DATA_WIDTH]
+            .CACHE_LINE           ( PRI_CACHE_LINE   ), //= 1,        // in word of [PRI_FETCH_DATA_WIDTH]
 
             .USE_REDUCED_TAG      ( USE_REDUCED_TAG  ), //= "TRUE",   // TRUE | FALSE
             .L2_SIZE              ( L2_SIZE          ) //= 512*1024  // Size of max(L2 ,ROM) program memory in Byte
@@ -397,7 +389,7 @@ module icache_hier_top
       .N_CORES        ( N_CH0                            ),
       .N_AUX_CHANNEL  ( N_CH1                            ),
       .UID_WIDTH      ( 2*NB_CORES                       ),
-      .DATA_WIDTH     ( FETCH_DATA_WIDTH                 ),
+      .DATA_WIDTH     ( SH_FETCH_DATA_WIDTH              ),
       .N_CACHE_BANKS  ( SH_NB_BANKS                      ) // Single L1.5 cache
    )
    ICACHE_INTERCONNECT
@@ -444,7 +436,7 @@ module icache_hier_top
       .CACHE_ID               ( i                              ),
       .FIFO_DEPTH             ( 4                              ),
 
-      .ICACHE_DATA_WIDTH      ( FETCH_DATA_WIDTH               ),
+      .ICACHE_DATA_WIDTH      ( SH_FETCH_DATA_WIDTH            ),
       .ICACHE_ID_WIDTH        ( 2*NB_CORES                     ),
       .ICACHE_ADDR_WIDTH      ( FETCH_ADDR_WIDTH               ),
 

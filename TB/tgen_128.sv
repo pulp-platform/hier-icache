@@ -44,7 +44,7 @@ module tgen_128
    begin
       for(i=0;i<N_TRANS;i++)
       begin
-         address[i] = $random() & 32'h0000_0FF0;
+         address[i] = $random() & ((FETCH_DATA_WIDTH == 128) ? 32'h0000_0FF0 : (FETCH_DATA_WIDTH == 64) ? 32'h0000_0FF8 : 32'h0000_0FFC);
       end
    end
 

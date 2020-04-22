@@ -42,7 +42,8 @@
 module pri_icache
 #(
    parameter FETCH_ADDR_WIDTH = 32,       // Size of the fetch address
-   parameter FETCH_DATA_WIDTH = 128,      // Size of the fetch data
+   parameter FETCH_DATA_WIDTH = 32,      // Size of the fetch data
+   parameter REFILL_DATA_WIDTH = 128,      // Size of the fetch data
 
    parameter NB_WAYS          = 4,        // Cache associativity
    parameter CACHE_SIZE       = 4096,     // Ccache capacity in Byte
@@ -67,13 +68,13 @@ module pri_icache
    input  logic                           refill_gnt_i,
    output logic [31:0]                    refill_addr_o,
    input  logic                           refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]    refill_r_data_i,
+   input  logic [REFILL_DATA_WIDTH-1:0]   refill_r_data_i,
 
    output logic                           pre_refill_req_o,
    input  logic                           pre_refill_gnt_i,
    output logic [31:0]                    pre_refill_addr_o,
    input  logic                           pre_refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]    pre_refill_r_data_i,
+   input  logic [REFILL_DATA_WIDTH-1:0]   pre_refill_r_data_i,
 
    input  logic                           enable_l1_l15_prefetch_i,
 
@@ -98,14 +99,14 @@ module pri_icache
 
    localparam REDUCE_TAG_WIDTH   = $clog2(L2_SIZE/CACHE_SIZE)+$clog2(NB_WAYS)+1; // add one bit for TAG valid info field
 
-   localparam OFFSET             = $clog2(FETCH_DATA_WIDTH)-3;
+   localparam OFFSET             = $clog2(REFILL_DATA_WIDTH)-3;
    localparam WAY_SIZE           = CACHE_SIZE/NB_WAYS;
-   localparam SCM_NUM_ROWS       = WAY_SIZE/(CACHE_LINE*FETCH_DATA_WIDTH/8); // TAG
+   localparam SCM_NUM_ROWS       = WAY_SIZE/(CACHE_LINE*REFILL_DATA_WIDTH/8); // TAG
    localparam SCM_TAG_ADDR_WIDTH = $clog2(SCM_NUM_ROWS);
 
    localparam TAG_WIDTH          = (USE_REDUCED_TAG == "TRUE") ? REDUCE_TAG_WIDTH : (FETCH_ADDR_WIDTH - SCM_TAG_ADDR_WIDTH - $clog2(CACHE_LINE) - OFFSET + 1);
 
-   localparam DATA_WIDTH          = FETCH_DATA_WIDTH;
+   localparam DATA_WIDTH          = REFILL_DATA_WIDTH;
    localparam SCM_DATA_ADDR_WIDTH = $clog2(SCM_NUM_ROWS)+$clog2(CACHE_LINE);  // Because of 32 Access
 
    localparam SET_ID_LSB = $clog2(DATA_WIDTH*CACHE_LINE)-3;
@@ -133,13 +134,13 @@ module pri_icache
    logic                                  refill_req_int;
    logic                                  refill_gnt_int;
    logic                                  refill_r_valid_int;
-   logic [FETCH_DATA_WIDTH-1:0]           refill_r_data_int;
+   logic [REFILL_DATA_WIDTH-1:0]          refill_r_data_int;
 
    logic [31:0]                           pre_refill_addr_int;
    logic                                  pre_refill_req_int;
    logic                                  pre_refill_gnt_int;
    logic                                  pre_refill_r_valid_int;
-   logic [FETCH_DATA_WIDTH-1:0]           pre_refill_r_data_int;
+   logic [REFILL_DATA_WIDTH-1:0]          pre_refill_r_data_int;
 
 
    //  ██████╗ █████╗  ██████╗██╗  ██╗███████╗         ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  ██████╗ ██╗     ██╗     ███████╗██████╗
@@ -152,6 +153,7 @@ module pri_icache
    #(
       .FETCH_ADDR_WIDTH         ( FETCH_ADDR_WIDTH         ),
       .FETCH_DATA_WIDTH         ( FETCH_DATA_WIDTH         ),
+      .REFILL_DATA_WIDTH        ( REFILL_DATA_WIDTH        ),
 
       .NB_CORES                 ( 1                        ),
       .NB_WAYS                  ( NB_WAYS                  ),
@@ -338,7 +340,7 @@ module pri_icache
          .clk           ( clk             ),
          .rst_n         ( rst_n           ),
 
-         .data_i        ( refill_addr_int ),
+         .data_i        ( {refill_addr_int[31:4], 4'h0} ),
          .valid_i       ( refill_req_int  ),
          .grant_o       ( refill_gnt_int  ),
 
@@ -358,7 +360,7 @@ module pri_icache
          .clk           ( clk             ),
          .rst_n         ( rst_n           ),
 
-         .data_i        ( pre_refill_addr_int ),
+         .data_i        ( {pre_refill_addr_int[31:4], 4'h0} ),
          .valid_i       ( pre_refill_req_int  ),
          .grant_o       ( pre_refill_gnt_int  ),
 
@@ -368,11 +370,11 @@ module pri_icache
          .test_mode_i   ( test_en_i           )
       );
 `else
-     assign refill_addr_o  = refill_addr_int;
+     assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
      assign refill_req_o   = refill_req_int;
      assign refill_gnt_int = refill_gnt_i;
 
-     assign pre_refill_addr_o  = pre_refill_addr_int;
+     assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
      assign pre_refill_req_o   = pre_refill_req_int;
      assign pre_refill_gnt_int = pre_refill_gnt_i;
 `endif
@@ -381,7 +383,7 @@ module pri_icache
  `ifdef USE_RESP_BUFF
       generic_fifo
       #(
-         .DATA_WIDTH ( FETCH_DATA_WIDTH   ),
+         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
          .DATA_DEPTH ( 2                  )
       )
       Refill_Resp_Buffer
@@ -401,7 +403,7 @@ module pri_icache
 
       generic_fifo
       #(
-         .DATA_WIDTH ( FETCH_DATA_WIDTH   ),
+         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
          .DATA_DEPTH ( 2                  )
       )
       Pre_refill_Resp_Buffer

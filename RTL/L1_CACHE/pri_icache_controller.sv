@@ -39,7 +39,8 @@
 module pri_icache_controller
 #(
    parameter FETCH_ADDR_WIDTH     = 32,
-   parameter FETCH_DATA_WIDTH     = 128,
+   parameter FETCH_DATA_WIDTH     = 32,
+   parameter REFILL_DATA_WIDTH    = 128,
 
    parameter NB_CORES             = 4,
    parameter NB_WAYS              = 4,
@@ -91,7 +92,7 @@ module pri_icache_controller
    output logic [NB_WAYS-1:0]                               DATA_wr_req_o,
    output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_addr_o,
    input  logic [NB_WAYS-1:0][SCM_DATA_WIDTH-1:0]           DATA_rdata_i,
-   output logic [FETCH_DATA_WIDTH-1:0]                      DATA_wdata_o,
+   output logic [REFILL_DATA_WIDTH-1:0]                     DATA_wdata_o,
 
    // interface with READ PORT --> SCM TAG
    output logic [1:0][NB_WAYS-1:0]                          TAG_rd_req_o,
@@ -106,18 +107,19 @@ module pri_icache_controller
    input  logic                                             pre_refill_gnt_i,
    output logic [FETCH_ADDR_WIDTH-1:0]                      pre_refill_addr_o,
    input  logic                                             pre_refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]                      pre_refill_r_data_i,
+   input  logic [REFILL_DATA_WIDTH-1:0]                     pre_refill_r_data_i,
 
    output logic                                             refill_req_o,
    input  logic                                             refill_gnt_i,
    output logic [FETCH_ADDR_WIDTH-1:0]                      refill_addr_o,
    input  logic                                             refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]                      refill_r_data_i
+   input  logic [REFILL_DATA_WIDTH-1:0]                     refill_r_data_i
 );
 
    typedef logic [NB_WAYS-1:0]                              logic_nbways;
 
-   localparam OFFSET     = $clog2(SCM_DATA_WIDTH*CACHE_LINE)-3;
+   localparam OFFSET      = $clog2(SCM_DATA_WIDTH*CACHE_LINE)-3;
+   localparam ADDR_OFFSET = $clog2(REFILL_DATA_WIDTH/FETCH_DATA_WIDTH);
 
    logic [FETCH_ADDR_WIDTH-1:0]                             fetch_addr_Q;
    logic [NB_WAYS-1:0]                                      fetch_way_Q;
@@ -146,7 +148,7 @@ module pri_icache_controller
    logic [NB_WAYS-1:0]                                      DATA_wr_req_int;
    logic [NB_WAYS-1:0]                                      DATA_req_int;
    logic [SCM_DATA_ADDR_WIDTH-1:0]                          DATA_addr_int;
-   logic [FETCH_DATA_WIDTH-1:0]                             DATA_wdata_int;
+   logic [REFILL_DATA_WIDTH-1:0]                            DATA_wdata_int;
    logic [NB_WAYS-1:0]                                      TAG_rd_req_int;
    logic [NB_WAYS-1:0]                                      TAG_wr_req_int;
    logic [SCM_TAG_ADDR_WIDTH-1:0]                           TAG_addr_int;
@@ -154,13 +156,20 @@ module pri_icache_controller
 
    logic [NB_WAYS-1:0]                                      DATA_wr_req_q;
    logic [SCM_DATA_ADDR_WIDTH-1:0]                          DATA_addr_q;
-   logic [FETCH_DATA_WIDTH-1:0]                             DATA_wdata_q;
+   logic [REFILL_DATA_WIDTH-1:0]                            DATA_wdata_q;
    logic [NB_WAYS-1:0]                                      TAG_rd_req_q;
    logic [NB_WAYS-1:0]                                      TAG_wr_req_q;
    logic [SCM_TAG_ADDR_WIDTH-1:0]                           TAG_addr_q;
    logic [SCM_TAG_WIDTH-1:0]                                TAG_wdata_q;
 
+   logic [REFILL_DATA_WIDTH/FETCH_DATA_WIDTH-1:0][FETCH_DATA_WIDTH-1:0] refill_r_data_int;
+   logic [REFILL_DATA_WIDTH/FETCH_DATA_WIDTH-1:0][FETCH_DATA_WIDTH-1:0] pre_refill_r_data_int;
+   logic [REFILL_DATA_WIDTH/FETCH_DATA_WIDTH-1:0][FETCH_DATA_WIDTH-1:0] DATA_rdata_hit_int;
+
    logic [FETCH_DATA_WIDTH-1:0]                             prefetch_conflict_DATA_wdata;
+
+   assign refill_r_data_int     = refill_r_data_i;
+   assign pre_refill_r_data_int = pre_refill_r_data_i;
 
    assign is_branch = (fetch_addr_i != fetch_addr_P);
 
@@ -193,6 +202,8 @@ module pri_icache_controller
 
    logic [$clog2(NB_WAYS)-1:0]                              HIT_WAY;
    logic [$clog2(NB_WAYS)-1:0]                              HIT_WAY_p;
+
+   assign DATA_rdata_hit_int       = DATA_rdata_i[HIT_WAY];
 
    assign first_available_way_OH   = logic_nbways'(1 << first_available_way);
    assign first_available_way_p_OH = logic_nbways'(1 << first_available_way_p);
@@ -312,7 +323,7 @@ module pri_icache_controller
              if(enable_l1_l15_prefetch_i)
                begin
                   if (fetch_req_i & !is_branch & pre_refill_r_valid_i)
-                    prefetch_conflict_DATA_wdata <= pre_refill_r_data_i;
+                    prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[fetch_addr_P[ADDR_OFFSET+1:2]];
 
                   fetch_req_C[1] <= fetch_req_C[0];
 
@@ -403,11 +414,11 @@ module pri_icache_controller
         DATA_rd_req_int      = {NB_WAYS{fetch_req_i}};
         DATA_wr_req_int      = fetch_way_Q & {NB_WAYS{refill_r_valid_i}};
         DATA_addr_int        = fetch_addr_i[SET_ID_MSB:SET_ID_LSB];
-        DATA_wdata_int       = refill_r_data_i;
+        DATA_wdata_int       = refill_r_data_int;
 
         fetch_gnt_o        = 1'b0;
         fetch_rvalid_o     = 1'b0;
-        fetch_rdata_o      = refill_r_data_i; //FIXME ok for AXI 64 and 32bit INSTR
+        fetch_rdata_o      = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
 
         refill_req_o       = 1'b0;
         refill_addr_o      = fetch_addr_Q;
@@ -441,7 +452,7 @@ module pri_icache_controller
                enable_pipe         = 1'b1; // enable addr delay 1 cycle
                cache_is_bypassed_o = 1'b1;
                cache_is_flushed_o  = 1'b1;
-               fetch_rdata_o       = refill_r_data_i;
+               fetch_rdata_o       = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
 
                if(bypass_icache_i | refill_wait_bypass) // Already Bypassed
@@ -491,7 +502,7 @@ module pri_icache_controller
                cache_is_bypassed_o = 1'b1;
                cache_is_flushed_o  = 1'b1;
 
-               fetch_rdata_o       = refill_r_data_i;
+               fetch_rdata_o       = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
 
                if(refill_r_valid_i)
@@ -587,7 +598,7 @@ module pri_icache_controller
           WAIT_PREFETCH:
             begin
                fetch_rvalid_o  = pre_refill_r_valid_i;
-               fetch_rdata_o   = pre_refill_r_data_i;
+               fetch_rdata_o   = pre_refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
 
                if (pre_refill_r_valid_i)
                  begin
@@ -622,7 +633,7 @@ module pri_icache_controller
                          NS = TAG_LOOKUP;
                       end
                     fetch_rvalid_o  = 1'b1;
-                    fetch_rdata_o   = DATA_rdata_i[HIT_WAY];
+                    fetch_rdata_o   = DATA_rdata_hit_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                  end
                else
                  begin : MISS
@@ -666,7 +677,7 @@ module pri_icache_controller
 
           WAIT_REFILL_DONE:
             begin
-               fetch_rdata_o   = refill_r_data_i;
+               fetch_rdata_o   = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                fetch_rvalid_o  = refill_r_valid_i;
 
                DATA_addr_int     = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
@@ -712,7 +723,7 @@ module pri_icache_controller
         // Prefetch write single port
         DATA_wr_req_q   = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
         DATA_addr_q     = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
-        DATA_wdata_q    = pre_refill_r_data_i;
+        DATA_wdata_q    = pre_refill_r_data_int;
         TAG_rd_req_q    = '0;
         TAG_wr_req_q    = fetch_way_P & {NB_WAYS{pre_refill_r_valid_i}};
         TAG_addr_q      = fetch_addr_P[SET_ID_MSB:SET_ID_LSB];
