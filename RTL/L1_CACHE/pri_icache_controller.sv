@@ -322,8 +322,13 @@ module pri_icache_controller
 
              if(enable_l1_l15_prefetch_i)
                begin
-                  if (fetch_req_i & !is_branch & pre_refill_r_valid_i)
-                    prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[fetch_addr_P[ADDR_OFFSET+1:2]];
+                  if (fetch_req_i & !is_branch & pre_refill_r_valid_i) begin
+                     case(ADDR_OFFSET)
+                       0: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[0];
+                       2: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[fetch_addr_P[3:2]];
+                       default: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[0];
+                     endcase
+                  end
 
                   fetch_req_C[1] <= fetch_req_C[0];
 
@@ -418,8 +423,11 @@ module pri_icache_controller
 
         fetch_gnt_o        = 1'b0;
         fetch_rvalid_o     = 1'b0;
-        fetch_rdata_o      = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
-
+        case(ADDR_OFFSET)
+          0:       fetch_rdata_o      = refill_r_data_int[0];
+          2:       fetch_rdata_o      = refill_r_data_int[fetch_addr_Q[3:2]];
+          default: fetch_rdata_o      = refill_r_data_int[0];
+        endcase
         refill_req_o       = 1'b0;
         refill_addr_o      = fetch_addr_Q;
         fetch_way_int      = '0;
@@ -452,7 +460,7 @@ module pri_icache_controller
                enable_pipe         = 1'b1; // enable addr delay 1 cycle
                cache_is_bypassed_o = 1'b1;
                cache_is_flushed_o  = 1'b1;
-               fetch_rdata_o       = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
+
                fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
 
                if(bypass_icache_i | refill_wait_bypass) // Already Bypassed
@@ -502,7 +510,6 @@ module pri_icache_controller
                cache_is_bypassed_o = 1'b1;
                cache_is_flushed_o  = 1'b1;
 
-               fetch_rdata_o       = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                fetch_rvalid_o      = refill_r_valid_i; // Must a single beat transaction
 
                if(refill_r_valid_i)
@@ -598,7 +605,11 @@ module pri_icache_controller
           WAIT_PREFETCH:
             begin
                fetch_rvalid_o  = pre_refill_r_valid_i;
-               fetch_rdata_o   = pre_refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
+               case(ADDR_OFFSET)
+                 0:       fetch_rdata_o      = pre_refill_r_data_int[0];
+                 2:       fetch_rdata_o      = pre_refill_r_data_int[fetch_addr_Q[3:2]];
+                 default: fetch_rdata_o      = pre_refill_r_data_int[0];
+               endcase
 
                if (pre_refill_r_valid_i)
                  begin
@@ -633,7 +644,12 @@ module pri_icache_controller
                          NS = TAG_LOOKUP;
                       end
                     fetch_rvalid_o  = 1'b1;
-                    fetch_rdata_o   = DATA_rdata_hit_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
+
+                    case(ADDR_OFFSET)
+                      0:       fetch_rdata_o      = DATA_rdata_hit_int[0];
+                      2:       fetch_rdata_o      = DATA_rdata_hit_int[fetch_addr_Q[3:2]];
+                      default: fetch_rdata_o      = DATA_rdata_hit_int[0];
+                    endcase
                  end
                else
                  begin : MISS
@@ -677,7 +693,6 @@ module pri_icache_controller
 
           WAIT_REFILL_DONE:
             begin
-               fetch_rdata_o   = refill_r_data_int[fetch_addr_Q[ADDR_OFFSET+1:2]];
                fetch_rvalid_o  = refill_r_valid_i;
 
                DATA_addr_int     = fetch_addr_Q[SET_ID_MSB:SET_ID_LSB];
