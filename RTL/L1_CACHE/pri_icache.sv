@@ -35,7 +35,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-// `define USE_REQ_BUFF
+`define USE_REQ_BUFF
 `define USE_RESP_BUFF
 `include "pulp_soc_defines.sv"
 
