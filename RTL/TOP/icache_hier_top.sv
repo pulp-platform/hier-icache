@@ -141,7 +141,8 @@ module icache_hier_top
    input  logic [NB_CORES-1:0]                          enable_l1_l15_prefetch_i,
 
    SP_ICACHE_CTRL_UNIT_BUS.Slave                        IC_ctrl_unit_bus_main[SH_NB_BANKS],
-   PRI_ICACHE_CTRL_UNIT_BUS.Slave                       IC_ctrl_unit_bus_pri[NB_CORES]
+   PRI_ICACHE_CTRL_UNIT_BUS.Slave                       IC_ctrl_unit_bus_pri[NB_CORES],
+   input  logic                                         lockstep_mode_i
 );
 
    // signals from PRI cache and interconnect
@@ -233,7 +234,18 @@ module icache_hier_top
 
    logic [NB_CORES - 1 :0][31:0]                         congestion_counter;
 
+   logic [NB_CORES-1:0]                                  pri_clk;
+   always_comb begin      
+      pri_clk[0] = clk;      
+      for(int k=1; k<NB_CORES; k++)begin
+         if(lockstep_mode_i)
+           pri_clk[k] = 1'b0;
+         else
+           pri_clk[k] = clk;         
+      end                            
+   end
 
+  
    genvar i;
    generate
 
@@ -329,9 +341,9 @@ module icache_hier_top
          )
          i_pri_icache
          (
-            .clk                  ( clk                                          ),
-            .rst_n                ( rst_n                                        ),
-            .test_en_i            ( test_en_i                                    ),
+            .clk                  ( pri_clk[i] ),
+            .rst_n                ( rst_n      ),
+            .test_en_i            ( test_en_i  ),
 
             .fetch_req_i          ( fetch_req_i[i]                               ),
             .fetch_addr_i         ( fetch_addr_i[i]                              ),
