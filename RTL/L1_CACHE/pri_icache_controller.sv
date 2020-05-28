@@ -90,7 +90,8 @@ module pri_icache_controller
    // interface with READ PORT --> SCM DATA
    output logic [NB_WAYS-1:0]                               DATA_rd_req_o,
    output logic [NB_WAYS-1:0]                               DATA_wr_req_o,
-   output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_addr_o,
+   output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_rd_addr_o,
+   output logic [SCM_DATA_ADDR_WIDTH-1:0]                   DATA_wr_addr_o,
    input  logic [NB_WAYS-1:0][SCM_DATA_WIDTH-1:0]           DATA_rdata_i,
    output logic [REFILL_DATA_WIDTH-1:0]                     DATA_wdata_o,
 
@@ -146,7 +147,6 @@ module pri_icache_controller
 
    logic [NB_WAYS-1:0]                                      DATA_rd_req_int;
    logic [NB_WAYS-1:0]                                      DATA_wr_req_int;
-   logic [NB_WAYS-1:0]                                      DATA_req_int;
    logic [SCM_DATA_ADDR_WIDTH-1:0]                          DATA_addr_int;
    logic [REFILL_DATA_WIDTH-1:0]                            DATA_wdata_int;
    logic [NB_WAYS-1:0]                                      TAG_rd_req_int;
@@ -173,11 +173,11 @@ module pri_icache_controller
 
    assign is_branch = (fetch_addr_i != fetch_addr_P);
 
-   assign DATA_req_int    = (DATA_rd_req_int | DATA_wr_req_int);
    assign DATA_rd_req_o   = DATA_rd_req_int;
-   assign DATA_wr_req_o   = |DATA_req_int ? DATA_wr_req_int: DATA_wr_req_q;
-   assign DATA_addr_o     = |DATA_req_int ? DATA_addr_int  : DATA_addr_q;
-   assign DATA_wdata_o    = |DATA_req_int ? DATA_wdata_int : DATA_wdata_q;
+   assign DATA_rd_addr_o  = DATA_addr_int;
+   assign DATA_wr_req_o   = |DATA_wr_req_int ? DATA_wr_req_int: DATA_wr_req_q;
+   assign DATA_wr_addr_o  = |DATA_wr_req_int ? DATA_addr_int  : DATA_addr_q;
+   assign DATA_wdata_o    = |DATA_wr_req_int ? DATA_wdata_int : DATA_wdata_q;
 
    assign TAG_rd_req_o[0] = TAG_rd_req_int;
    assign TAG_wr_req_o[0] = TAG_wr_req_int;
@@ -185,7 +185,7 @@ module pri_icache_controller
    assign TAG_wdata_o[0]  = TAG_wdata_int;
 
    assign TAG_rd_req_o[1] = TAG_rd_req_q;
-   assign TAG_wr_req_o[1] = |DATA_req_int ? '0 : TAG_wr_req_q;
+   assign TAG_wr_req_o[1] = |DATA_wr_req_int ? '0 : TAG_wr_req_q;
    assign TAG_addr_o[1]   = TAG_addr_q;
    assign TAG_wdata_o[1]  = TAG_wdata_q;
 

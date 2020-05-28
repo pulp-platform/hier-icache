@@ -35,7 +35,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-// `define USE_REQ_BUFF
+`define USE_REQ_BUFF
 `define USE_RESP_BUFF
 `include "pulp_soc_defines.sv"
 
@@ -119,7 +119,8 @@ module pri_icache
    // interface with READ PORT --> SCM DATA
    logic [NB_WAYS-1:0]                    DATA_rd_req_int;
    logic [NB_WAYS-1:0]                    DATA_wr_req_int;
-   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_addr_int;
+   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_rd_addr_int;
+   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_wr_addr_int;
    logic [NB_WAYS-1:0][DATA_WIDTH-1:0]    DATA_rdata_int;
    logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
 
@@ -204,7 +205,8 @@ module pri_icache
       // interface with READ PORT --> SCM DATA
       .DATA_rd_req_o            ( DATA_rd_req_int          ),
       .DATA_wr_req_o            ( DATA_wr_req_int          ),
-      .DATA_addr_o              ( DATA_addr_int            ),
+      .DATA_rd_addr_o           ( DATA_rd_addr_int         ),
+      .DATA_wr_addr_o           ( DATA_wr_addr_int         ),
       .DATA_rdata_i             ( DATA_rdata_int           ),
       .DATA_wdata_o             ( DATA_wdata_int           ),
 
@@ -305,12 +307,12 @@ module pri_icache
 
             // Read port
             .ReadEnable  ( DATA_rd_req_int[i]    ),
-            .ReadAddr    ( DATA_addr_int         ),
+            .ReadAddr    ( DATA_rd_addr_int      ),
             .ReadData    ( DATA_rdata_int[i]     ),
 
             // Write port
             .WriteEnable ( DATA_wr_req_int[i]    ),
-            .WriteAddr   ( DATA_addr_int         ),
+            .WriteAddr   ( DATA_wr_addr_int      ),
             .WriteData   ( DATA_wdata_int        )
         `ifndef PULP_FPGA_EMUL
             ,
