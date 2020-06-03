@@ -539,17 +539,7 @@ module share_icache_controller
                 // always allow the L2 to deliver responses
                 init_rready_o       = 1'b1;
 
-                case(ICACHE_DATA_WIDTH)
-                  32:
-                  begin
-                      fetch_r_rdata_int   = (alig_addr_muxsel) ? init_rdata_i[1] : init_rdata_i[0]; //FIXME
-                  end
-
-                  64,128,256,512:
-                  begin
-                      fetch_r_rdata_int   = init_rdata_i[0];
-                  end
-                endcase
+                fetch_r_rdata_int   = init_rdata_i[0];
 
 
                 fetch_r_ID_o        = fetch_ID_int;
@@ -597,18 +587,7 @@ module share_icache_controller
             begin
 
                 fetch_grant_o       = 1'b0;
-                case(ICACHE_DATA_WIDTH)
-                  32:
-                  begin
-                      if(CACHE_LINE > 1 )
-                          fetch_r_rdata_int   = (alig_addr_muxsel) ? init_rdata_i[1] : init_rdata_i[0]; //FIXME
-                  end
-
-                  64,128,256,512:
-                  begin
-                      fetch_r_rdata_int   = init_rdata_i[0];
-                  end
-                endcase
+                fetch_r_rdata_int   = init_rdata_i[0];
 
 
                 fetch_r_ID_o        = fetch_ID_int;
