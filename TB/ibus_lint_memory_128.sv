@@ -23,7 +23,10 @@ module ibus_lint_memory_128
     output logic                                lint_grant_o,
     input  logic [addr_width-1:0]               lint_addr_i,
     
+    input  logic [1:0]                          lint_addr_offset_i,
+
     output logic [3:0][31:0]                    lint_r_rdata_o,
+    output logic      [31:0]                    lint_r_rdata_32_o,
     output logic                                lint_r_valid_o
 );
 
@@ -32,6 +35,7 @@ module ibus_lint_memory_128
     logic [3:0][31:0]                   ARRAY [numwords];
     logic                               r_valid;
     logic [3:0][31:0]                   r_rdata;
+    logic      [31:0]                   r_rdata_32;
     logic                               lint_grant_int;
     
     
@@ -60,6 +64,7 @@ module ibus_lint_memory_128
       begin
         r_valid <= 1'b0;
         r_rdata <= '0;
+        r_rdata_32 <= '0;
       end
       else
       begin
@@ -67,6 +72,7 @@ module ibus_lint_memory_128
         begin
             r_valid <= 1'b1;
             r_rdata <= ARRAY [lint_addr_i];
+            r_rdata_32 <= ARRAY [lint_addr_i][lint_addr_offset_i];
         end
         else
         begin
@@ -77,6 +83,7 @@ module ibus_lint_memory_128
 
     assign lint_r_valid_o = r_valid;
     assign lint_r_rdata_o = r_rdata;
+    assign lint_r_rdata_32_o = r_rdata_32;
 
     initial
     begin

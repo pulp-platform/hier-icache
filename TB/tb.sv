@@ -21,7 +21,8 @@ module tb;
    parameter AXI_USER         = 4;
 
    parameter FETCH_ADDR_WIDTH = 32;
-   parameter FETCH_DATA_WIDTH = 128;
+   parameter PRI_FETCH_DATA_WIDTH = 32;
+   parameter SH_FETCH_DATA_WIDTH  = 128;
 
    parameter PRI_NB_WAYS          = 4;
    parameter PRI_CACHE_SIZE       = 512;
@@ -43,7 +44,8 @@ module tb;
    logic                                           test_en_i;
 
    logic [NB_CORES-1:0]                            fetch_enable;
-   logic [NB_CORES-1:0][FETCH_DATA_WIDTH-1:0]      instr_r_rdata_L2_to_check;
+   logic [NB_CORES-1:0][SH_FETCH_DATA_WIDTH-1:0]   instr_r_rdata_L2_to_check;
+   logic [NB_CORES-1:0][PRI_FETCH_DATA_WIDTH-1:0]  instr_r_rdata_32_L2_to_check;
    logic [AXI_ADDR-1:0]                            temp_address;
 
    logic [NB_CORES-1:0]                            eoc_int;
@@ -56,7 +58,7 @@ module tb;
    logic [NB_CORES-1:0] [FETCH_ADDR_WIDTH-1:0]     fetch_addr_int;
    logic [NB_CORES-1:0]                            fetch_gnt_int;
    logic [NB_CORES-1:0]                            fetch_rvalid_int;
-   logic [NB_CORES-1:0] [FETCH_DATA_WIDTH-1:0]     fetch_rdata_int;
+   logic [NB_CORES-1:0] [PRI_FETCH_DATA_WIDTH-1:0] fetch_rdata_int;
 
 
    // Signals from icache_control_unit to Hier CAChe
@@ -157,7 +159,6 @@ module tb;
    logic [NB_CORES - 1 : 0] pri_sel_flush_req;
 
    logic [NB_CORES - 1 : 0] enable_l1_l15_prefetch;
-   logic                    special_core_icache;
 
    genvar   i;
 
@@ -188,6 +189,7 @@ module tb;
    begin
       clk          = '0;
       rst_n        = 1'b1;
+      test_en_i    = 1'b0;
       fetch_enable = '0;
 
       sh_clear_regs  = '0;
@@ -197,7 +199,6 @@ module tb;
       pri_flush_req     = '0;
       pri_sel_flush_req = '0;
       enable_l1_l15_prefetch = '0;
-      special_core_icache = '0;
 
       sh_req_enable     = '0;
       sh_req_disable    = '1;
@@ -227,18 +228,18 @@ module tb;
 
       #1000;
 
-      sh_req_disable    = 9'h000;
-      sh_req_enable     = 9'h1FF;
-      pri_bypass_req    = 9'h000;
+      sh_req_disable    = 8'h00;
+      sh_req_enable     = 8'hFF;
+      pri_bypass_req    = 8'h00;
 
-      enable_l1_l15_prefetch = 9'h1FF;
+      enable_l1_l15_prefetch = 8'hFF;
 
       for(int i=0;i<100;i++)
         begin
            #4;
-           enable_l1_l15_prefetch = 9'h000;
+           enable_l1_l15_prefetch = 8'h00;
            #4;
-           enable_l1_l15_prefetch = 9'h1FF;
+           enable_l1_l15_prefetch = 8'hFF;
         end
 
       @(eoc_event);
@@ -261,7 +262,7 @@ module tb;
          tgen_128
          #(
             .FETCH_ADDR_WIDTH (FETCH_ADDR_WIDTH),
-            .FETCH_DATA_WIDTH (FETCH_DATA_WIDTH)
+            .FETCH_DATA_WIDTH (PRI_FETCH_DATA_WIDTH)
          )
          CORE
          (
@@ -291,26 +292,34 @@ module tb;
             .lint_req_i      ( fetch_req_int[i] &  fetch_gnt_int[i] ),
             .lint_grant_o    (                                      ),
             .lint_addr_i     ( fetch_addr_int[i][L2_ADDR_WIDTH+3:4] ),
+            .lint_addr_offset_i ( fetch_addr_int[i][3:2]            ),
 
             .lint_r_rdata_o  ( instr_r_rdata_L2_to_check[i]         ),
+            .lint_r_rdata_32_o ( instr_r_rdata_32_L2_to_check[i]    ),
             .lint_r_valid_o  (                                      )
          );
 
 
          // assertion to check fetch correctness
          always @(posedge clk)
-         begin
-            if(fetch_rvalid_int[i])
-            begin
-               if(fetch_rdata_int[i] !== instr_r_rdata_L2_to_check[i])
-               begin
-                  $error("Error on CORE FETCH INTERFACE[%d]: Expected %h, Got %h at time %t", i, instr_r_rdata_L2_to_check[i], fetch_rdata_int[i], $time );
-                  $stop();
-               end
-            end
-         end
-
-
+           begin
+              if(fetch_rvalid_int[i])
+                begin
+                   if (PRI_FETCH_DATA_WIDTH == 128) begin
+                      if(fetch_rdata_int[i] !== instr_r_rdata_L2_to_check[i])
+                        begin
+                           $error("Error on CORE FETCH INTERFACE[%d]: Expected %h, Got %h at time %t", i, instr_r_rdata_L2_to_check[i], fetch_rdata_int[i], $time );
+                           $stop();
+                        end
+                   end else begin
+                      if(fetch_rdata_int[i] !== instr_r_rdata_32_L2_to_check[i])
+                        begin
+                           $error("Error on CORE FETCH INTERFACE[%d]: Expected %h, Got %h at time %t", i, instr_r_rdata_L2_to_check[i], fetch_rdata_int[i], $time );
+                           $stop();
+                        end
+                   end
+                end
+           end
       end
    endgenerate
 
@@ -426,7 +435,8 @@ module tb;
    icache_hier_top
    #(
       .FETCH_ADDR_WIDTH  ( FETCH_ADDR_WIDTH ), // 32,
-      .FETCH_DATA_WIDTH  ( FETCH_DATA_WIDTH ), // 128,
+      .PRI_FETCH_DATA_WIDTH ( PRI_FETCH_DATA_WIDTH), // 128,
+      .SH_FETCH_DATA_WIDTH  ( SH_FETCH_DATA_WIDTH ), // 128,
 
       .NB_CORES          ( NB_CORES         ), // 8,
 
@@ -434,15 +444,11 @@ module tb;
       .SH_NB_BANKS       ( SH_NB_BANKS      ), // 2,
       .SH_NB_WAYS        ( SH_NB_WAYS       ), // 4,
       .SH_CACHE_SIZE     ( SH_CACHE_SIZE    ), // 32*1024, // in Byte
-      .SH_CACHE_LINE     ( SH_CACHE_LINE    ), // 1,       // in word of [FETCH_DATA_WIDTH]
+      .SH_CACHE_LINE     ( SH_CACHE_LINE    ), // 1,       // in word of [SH_FETCH_DATA_WIDTH]
 
       .PRI_NB_WAYS       ( PRI_NB_WAYS      ), // 4,
       .PRI_CACHE_SIZE    ( PRI_CACHE_SIZE   ), // 256, // in Byte
-      .PRI_CACHE_LINE    ( PRI_CACHE_LINE   ), // 1,   // in word of [FETCH_DATA_WIDTH]
-
-      .USE_SPECIAL_CORE       ( "TRUE"     ),
-      .SPECIAL_CORE_ID        ( 8          ),
-      .SPECIAL_PRI_CACHE_SIZE ( 1024       ), // 1024 in Byte
+      .PRI_CACHE_LINE    ( PRI_CACHE_LINE   ), // 1,   // in word of [PRIFETCH_DATA_WIDTH]
 
       .AXI_ID            ( AXI_ID           ), // 6,
       .AXI_ADDR          ( AXI_ADDR         ), // 32,
@@ -463,7 +469,7 @@ module tb;
       .fetch_addr_i            ( fetch_addr_int            ),  // input  logic [NB_CORES-1:0][FETCH_ADDR_WIDTH-1:0]
       .fetch_gnt_o             ( fetch_gnt_int             ),  // output logic [NB_CORES-1:0]
       .fetch_rvalid_o          ( fetch_rvalid_int          ),  // output logic [NB_CORES-1:0]
-      .fetch_rdata_o           ( fetch_rdata_int           ),  // output logic [NB_CORES-1:0][FETCH_DATA_WIDTH-1:0]
+      .fetch_rdata_o           ( fetch_rdata_int           ),  // output logic [NB_CORES-1:0][PRI_FETCH_DATA_WIDTH-1:0]
 
 
       //AXI read address bus -------------------------------------------
@@ -524,7 +530,6 @@ module tb;
       .axi_master_bready_o     ( axi_master_bready_int     ),  // output logic
       // ---------------------------------------------------------------
        .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch   ),
-       .special_core_dest_i    ( special_core_icache        ),
 
        .IC_ctrl_unit_bus_pri   ( IC_ctrl_unit_bus_pri      ),
        .IC_ctrl_unit_bus_main  ( IC_ctrl_unit_bus_main     )

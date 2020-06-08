@@ -35,14 +35,15 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-// `define USE_REQ_BUFF
+`define USE_REQ_BUFF
 `define USE_RESP_BUFF
 `include "pulp_soc_defines.sv"
 
 module pri_icache
 #(
    parameter FETCH_ADDR_WIDTH = 32,       // Size of the fetch address
-   parameter FETCH_DATA_WIDTH = 128,      // Size of the fetch data
+   parameter FETCH_DATA_WIDTH = 32,      // Size of the fetch data
+   parameter REFILL_DATA_WIDTH = 128,      // Size of the fetch data
 
    parameter NB_WAYS          = 4,        // Cache associativity
    parameter CACHE_SIZE       = 4096,     // Ccache capacity in Byte
@@ -67,7 +68,13 @@ module pri_icache
    input  logic                           refill_gnt_i,
    output logic [31:0]                    refill_addr_o,
    input  logic                           refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]    refill_r_data_i,
+   input  logic [REFILL_DATA_WIDTH-1:0]   refill_r_data_i,
+
+   output logic                           pre_refill_req_o,
+   input  logic                           pre_refill_gnt_i,
+   output logic [31:0]                    pre_refill_addr_o,
+   input  logic                           pre_refill_r_valid_i,
+   input  logic [REFILL_DATA_WIDTH-1:0]   pre_refill_r_data_i,
 
    input  logic                           enable_l1_l15_prefetch_i,
 
@@ -92,14 +99,14 @@ module pri_icache
 
    localparam REDUCE_TAG_WIDTH   = $clog2(L2_SIZE/CACHE_SIZE)+$clog2(NB_WAYS)+1; // add one bit for TAG valid info field
 
-   localparam OFFSET             = $clog2(FETCH_DATA_WIDTH)-3;
+   localparam OFFSET             = $clog2(REFILL_DATA_WIDTH)-3;
    localparam WAY_SIZE           = CACHE_SIZE/NB_WAYS;
-   localparam SCM_NUM_ROWS       = WAY_SIZE/(CACHE_LINE*FETCH_DATA_WIDTH/8); // TAG
+   localparam SCM_NUM_ROWS       = WAY_SIZE/(CACHE_LINE*REFILL_DATA_WIDTH/8); // TAG
    localparam SCM_TAG_ADDR_WIDTH = $clog2(SCM_NUM_ROWS);
 
    localparam TAG_WIDTH          = (USE_REDUCED_TAG == "TRUE") ? REDUCE_TAG_WIDTH : (FETCH_ADDR_WIDTH - SCM_TAG_ADDR_WIDTH - $clog2(CACHE_LINE) - OFFSET + 1);
 
-   localparam DATA_WIDTH          = FETCH_DATA_WIDTH;
+   localparam DATA_WIDTH          = REFILL_DATA_WIDTH;
    localparam SCM_DATA_ADDR_WIDTH = $clog2(SCM_NUM_ROWS)+$clog2(CACHE_LINE);  // Because of 32 Access
 
    localparam SET_ID_LSB = $clog2(DATA_WIDTH*CACHE_LINE)-3;
@@ -110,31 +117,31 @@ module pri_icache
 
 
    // interface with READ PORT --> SCM DATA
-   logic [NB_WAYS-1:0]                    DATA_req_int;
-   logic                                  DATA_we_int;
-   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_addr_int;
+   logic [NB_WAYS-1:0]                    DATA_rd_req_int;
+   logic [NB_WAYS-1:0]                    DATA_wr_req_int;
+   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_rd_addr_int;
+   logic [SCM_DATA_ADDR_WIDTH-1:0]        DATA_wr_addr_int;
    logic [NB_WAYS-1:0][DATA_WIDTH-1:0]    DATA_rdata_int;
    logic [DATA_WIDTH-1:0]                 DATA_wdata_int;
 
    // interface with READ PORT --> SCM TAG
-   logic [NB_WAYS-1:0]                    TAG_req_int;
-   logic                                  TAG_we_int;
-   logic [SCM_TAG_ADDR_WIDTH-1:0]         TAG_addr_int;
-   logic [NB_WAYS-1:0][TAG_WIDTH-1:0]     TAG_rdata_int;
-   logic [TAG_WIDTH-1:0]                  TAG_wdata_int;
-
-
-   logic [NB_WAYS-1:0]                    DATA_read_enable;
-   logic [NB_WAYS-1:0]                    DATA_write_enable;
-
-   logic [NB_WAYS-1:0]                    TAG_read_enable;
-   logic [NB_WAYS-1:0]                    TAG_write_enable;
+   logic [1:0][NB_WAYS-1:0]               TAG_rd_req_int;
+   logic [1:0][NB_WAYS-1:0]               TAG_wr_req_int;
+   logic [1:0][SCM_TAG_ADDR_WIDTH-1:0]    TAG_addr_int;
+   logic [1:0][NB_WAYS-1:0][TAG_WIDTH-1:0]TAG_rdata_int;
+   logic [1:0][TAG_WIDTH-1:0]             TAG_wdata_int;
 
    logic [31:0]                           refill_addr_int;
    logic                                  refill_req_int;
    logic                                  refill_gnt_int;
    logic                                  refill_r_valid_int;
-   logic [FETCH_DATA_WIDTH-1:0]           refill_r_data_int;
+   logic [REFILL_DATA_WIDTH-1:0]          refill_r_data_int;
+
+   logic [31:0]                           pre_refill_addr_int;
+   logic                                  pre_refill_req_int;
+   logic                                  pre_refill_gnt_int;
+   logic                                  pre_refill_r_valid_int;
+   logic [REFILL_DATA_WIDTH-1:0]          pre_refill_r_data_int;
 
 
    //  ██████╗ █████╗  ██████╗██╗  ██╗███████╗         ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  ██████╗ ██╗     ██╗     ███████╗██████╗
@@ -147,6 +154,7 @@ module pri_icache
    #(
       .FETCH_ADDR_WIDTH         ( FETCH_ADDR_WIDTH         ),
       .FETCH_DATA_WIDTH         ( FETCH_DATA_WIDTH         ),
+      .REFILL_DATA_WIDTH        ( REFILL_DATA_WIDTH        ),
 
       .NB_CORES                 ( 1                        ),
       .NB_WAYS                  ( NB_WAYS                  ),
@@ -195,24 +203,30 @@ module pri_icache
 
 
       // interface with READ PORT --> SCM DATA
-      .DATA_req_o               ( DATA_req_int             ),
-      .DATA_we_o                ( DATA_we_int              ),
-      .DATA_addr_o              ( DATA_addr_int            ),
+      .DATA_rd_req_o            ( DATA_rd_req_int          ),
+      .DATA_wr_req_o            ( DATA_wr_req_int          ),
+      .DATA_rd_addr_o           ( DATA_rd_addr_int         ),
+      .DATA_wr_addr_o           ( DATA_wr_addr_int         ),
       .DATA_rdata_i             ( DATA_rdata_int           ),
       .DATA_wdata_o             ( DATA_wdata_int           ),
 
       // interface with READ PORT --> SCM TAG
-      .TAG_req_o                ( TAG_req_int              ),
+      .TAG_rd_req_o             ( TAG_rd_req_int           ),
+      .TAG_wr_req_o             ( TAG_wr_req_int           ),
       .TAG_addr_o               ( TAG_addr_int             ),
       .TAG_rdata_i              ( TAG_rdata_int            ),
       .TAG_wdata_o              ( TAG_wdata_int            ),
-      .TAG_we_o                 ( TAG_we_int               ),
 
       // Interface to cache_controller_to Icache L1.5 port
+      .pre_refill_req_o         ( pre_refill_req_int       ),
+      .pre_refill_gnt_i         ( pre_refill_gnt_int       ),
+      .pre_refill_addr_o        ( pre_refill_addr_int      ),
+      .pre_refill_r_valid_i     ( pre_refill_r_valid_int   ),
+      .pre_refill_r_data_i      ( pre_refill_r_data_int    ),
+
       .refill_req_o             ( refill_req_int           ),
       .refill_gnt_i             ( refill_gnt_int           ),
       .refill_addr_o            ( refill_addr_int          ),
-
       .refill_r_valid_i         ( refill_r_valid_int       ),
       .refill_r_data_i          ( refill_r_data_int        )
    );
@@ -229,15 +243,12 @@ module pri_icache
       //    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝╚═╝     ╚═╝
       for(i=0; i<NB_WAYS; i++)
       begin : _TAG_WAY_
-         assign TAG_read_enable[i]  = TAG_req_int[i] & ~TAG_we_int;
-         assign TAG_write_enable[i] = TAG_req_int[i] &  TAG_we_int;
 
-
-     `ifdef PULP_FPGA_EMUL
-        register_file_1r_1w
-     `else
-        register_file_1r_1w_test_wrap
-     `endif
+`ifndef PULP_FPGA_EMUL
+        register_file_2r_2w_icache
+`else
+        register_file_2r_2w_fpga
+`endif
          #(
             .ADDR_WIDTH  ( SCM_TAG_ADDR_WIDTH ),
             .DATA_WIDTH  ( TAG_WIDTH          )
@@ -245,31 +256,25 @@ module pri_icache
          TAG_BANK
          (
             .clk         ( clk          ),
-         `ifdef PULP_FPGA_EMUL
             .rst_n       ( rst_n        ),
-         `endif
 
             // Read port
-            .ReadEnable  ( TAG_read_enable[i]  ),
-            .ReadAddr    ( TAG_addr_int        ),
-            .ReadData    ( TAG_rdata_int[i]    ),
+            .ren_a_i     ( TAG_rd_req_int[0][i]),
+            .raddr_a_i   ( TAG_addr_int[0]     ),
+            .rdata_a_o   ( TAG_rdata_int[0][i] ),
+
+            .ren_b_i     ( TAG_rd_req_int[1][i]),
+            .raddr_b_i   ( TAG_addr_int[1]     ),
+            .rdata_b_o   ( TAG_rdata_int[1][i] ),
 
             // Write port
-            .WriteEnable ( TAG_write_enable[i] ),
-            .WriteAddr   ( TAG_addr_int        ),
-            .WriteData   ( TAG_wdata_int       )
-        `ifndef PULP_FPGA_EMUL
-            ,
-            // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+            .we_a_i      ( TAG_wr_req_int[0][i]),
+            .waddr_a_i   ( TAG_addr_int[0]     ),
+            .wdata_a_i   ( TAG_wdata_int[0]    ),
 
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .Q_T         (                     )
-        `endif
+            .we_b_i      ( TAG_wr_req_int[1][i]),
+            .waddr_b_i   ( TAG_addr_int[1]     ),
+            .wdata_b_i   ( TAG_wdata_int[1]    )
          );
       end
 
@@ -283,8 +288,6 @@ module pri_icache
 
       for(i=0; i<NB_WAYS; i++)
       begin : _DATA_WAY_
-         assign DATA_read_enable[i]  = DATA_req_int[i] & ~DATA_we_int;
-         assign DATA_write_enable[i] = DATA_req_int[i] & DATA_we_int;
 
      `ifdef PULP_FPGA_EMUL
          register_file_1r_1w
@@ -303,13 +306,13 @@ module pri_icache
          `endif
 
             // Read port
-            .ReadEnable  ( DATA_read_enable[i]   ),
-            .ReadAddr    ( DATA_addr_int         ),
+            .ReadEnable  ( DATA_rd_req_int[i]    ),
+            .ReadAddr    ( DATA_rd_addr_int      ),
             .ReadData    ( DATA_rdata_int[i]     ),
 
             // Write port
-            .WriteEnable ( DATA_write_enable[i]  ),
-            .WriteAddr   ( DATA_addr_int         ),
+            .WriteEnable ( DATA_wr_req_int[i]    ),
+            .WriteAddr   ( DATA_wr_addr_int      ),
             .WriteData   ( DATA_wdata_int        )
         `ifndef PULP_FPGA_EMUL
             ,
@@ -339,7 +342,7 @@ module pri_icache
          .clk           ( clk             ),
          .rst_n         ( rst_n           ),
 
-         .data_i        ( refill_addr_int ),
+         .data_i        ( {refill_addr_int[31:4], 4'h0} ),
          .valid_i       ( refill_req_int  ),
          .grant_o       ( refill_gnt_int  ),
 
@@ -348,17 +351,41 @@ module pri_icache
          .grant_i       ( refill_gnt_i    ),
          .test_mode_i   ( test_en_i       )
       );
+
+      generic_fifo
+      #(
+         .DATA_WIDTH ( 32  ),
+         .DATA_DEPTH ( 2   )
+      )
+      pre_Refill_Req_Buffer
+      (
+         .clk           ( clk             ),
+         .rst_n         ( rst_n           ),
+
+         .data_i        ( {pre_refill_addr_int[31:4], 4'h0} ),
+         .valid_i       ( pre_refill_req_int  ),
+         .grant_o       ( pre_refill_gnt_int  ),
+
+         .data_o        ( pre_refill_addr_o   ),
+         .valid_o       ( pre_refill_req_o    ),
+         .grant_i       ( pre_refill_gnt_i    ),
+         .test_mode_i   ( test_en_i           )
+      );
 `else
-     assign refill_addr_o  = refill_addr_int;
+     assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
      assign refill_req_o   = refill_req_int;
      assign refill_gnt_int = refill_gnt_i;
+
+     assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
+     assign pre_refill_req_o   = pre_refill_req_int;
+     assign pre_refill_gnt_int = pre_refill_gnt_i;
 `endif
 
 
  `ifdef USE_RESP_BUFF
       generic_fifo
       #(
-         .DATA_WIDTH ( FETCH_DATA_WIDTH   ),
+         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
          .DATA_DEPTH ( 2                  )
       )
       Refill_Resp_Buffer
@@ -375,9 +402,31 @@ module pri_icache
          .grant_i       ( 1'b1               ), // always grant it
          .test_mode_i   ( test_en_i          )
       );
+
+      generic_fifo
+      #(
+         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
+         .DATA_DEPTH ( 2                  )
+      )
+      Pre_refill_Resp_Buffer
+      (
+         .clk           ( clk                ),
+         .rst_n         ( rst_n              ),
+
+         .data_i        ( pre_refill_r_data_i    ),
+         .valid_i       ( pre_refill_r_valid_i   ),
+         .grant_o       (                        ), // nobody is listening
+
+         .data_o        ( pre_refill_r_data_int  ),
+         .valid_o       ( pre_refill_r_valid_int ),
+         .grant_i       ( 1'b1                   ), // always grant it
+         .test_mode_i   ( test_en_i              )
+      );
 `else
      assign refill_r_data_int    = refill_r_data_i;
      assign refill_r_valid_int   = refill_r_valid_i;
+     assign pre_refill_r_data_int    = pre_refill_r_data_i;
+     assign pre_refill_r_valid_int   = pre_refill_r_valid_i;
 `endif
 
 endmodule // fc_icache

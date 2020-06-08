@@ -25,8 +25,7 @@ module hier_icache_ctrl_unit_wrap
 
     SP_ICACHE_CTRL_UNIT_BUS.Master              IC_ctrl_unit_bus_main[NB_CACHE_BANKS],
     PRI_ICACHE_CTRL_UNIT_BUS.Master             IC_ctrl_unit_bus_pri[NB_CORES],
-    output logic [NB_CORES-1:0]                 enable_l1_l15_prefetch_o,
-    output logic                                special_core_icache_cfg_o
+    output logic [NB_CORES-1:0]                 enable_l1_l15_prefetch_o
 
 );
 
@@ -76,7 +75,7 @@ module hier_icache_ctrl_unit_wrap
          assign  IC_ctrl_unit_bus_pri_flush_ack[i]      = IC_ctrl_unit_bus_pri[i].flush_ack;
 
          assign  IC_ctrl_unit_bus_pri[i].sel_flush_req  = IC_ctrl_unit_bus_pri_sel_flush_req  [i] ;
-         assign  IC_ctrl_unit_bus_pri[i].sel_flush_addr = IC_ctrl_unit_bus_pri_sel_flush_addr [i] ;
+         assign  IC_ctrl_unit_bus_pri[i].sel_flush_addr = IC_ctrl_unit_bus_pri_sel_flush_addr ;
          assign  IC_ctrl_unit_bus_pri_sel_flush_ack[i]  = IC_ctrl_unit_bus_pri[i].sel_flush_ack;
 `ifdef FEATURE_ICACHE_STAT
          assign IC_ctrl_unit_bus_pri_L1_hit_count   [i]   = IC_ctrl_unit_bus_pri[i].ctrl_hit_count;
@@ -103,7 +102,7 @@ module hier_icache_ctrl_unit_wrap
          assign  IC_ctrl_unit_bus_main[i].icache_is_private = 1'b1;
 
          assign  IC_ctrl_unit_bus_main[i].sel_flush_req     = IC_ctrl_unit_bus_main_sel_flush_req  [i];
-         assign  IC_ctrl_unit_bus_main[i].sel_flush_addr    = IC_ctrl_unit_bus_main_sel_flush_addr [i];
+         assign  IC_ctrl_unit_bus_main[i].sel_flush_addr    = IC_ctrl_unit_bus_main_sel_flush_addr;
          assign  IC_ctrl_unit_bus_main_sel_flush_ack[i]     = IC_ctrl_unit_bus_main[i].sel_flush_ack;
 
 `ifdef FEATURE_ICACHE_STAT
@@ -158,8 +157,7 @@ module hier_icache_ctrl_unit_wrap
        .L2_icache_sel_flush_req_o   (  IC_ctrl_unit_bus_main_sel_flush_req   ),
        .L2_icache_sel_flush_addr_o  (  IC_ctrl_unit_bus_main_sel_flush_addr  ),
        .L2_icache_sel_flush_ack_i   (  IC_ctrl_unit_bus_main_sel_flush_ack   ),
-       .enable_l1_l15_prefetch_o    ( enable_l1_l15_prefetch_o               ),
-      .special_core_icache_cfg_o    ( special_core_icache_cfg_o              )
+       .enable_l1_l15_prefetch_o    ( enable_l1_l15_prefetch_o               )
 
 
 

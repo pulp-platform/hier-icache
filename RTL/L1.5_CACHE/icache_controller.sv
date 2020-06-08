@@ -539,17 +539,7 @@ module share_icache_controller
                 // always allow the L2 to deliver responses
                 init_rready_o       = 1'b1;
 
-                case(ICACHE_DATA_WIDTH)
-                  32:
-                  begin
-                      fetch_r_rdata_int   = (alig_addr_muxsel) ? init_rdata_i[1] : init_rdata_i[0]; //FIXME
-                  end
-
-                  64,128,256,512:
-                  begin
-                      fetch_r_rdata_int   = init_rdata_i[0];
-                  end
-                endcase
+                fetch_r_rdata_int   = init_rdata_i[0];
 
 
                 fetch_r_ID_o        = fetch_ID_int;
@@ -597,18 +587,7 @@ module share_icache_controller
             begin
 
                 fetch_grant_o       = 1'b0;
-                case(ICACHE_DATA_WIDTH)
-                  32:
-                  begin
-                      if(CACHE_LINE > 1 )
-                          fetch_r_rdata_int   = (alig_addr_muxsel) ? init_rdata_i[1] : init_rdata_i[0]; //FIXME
-                  end
-
-                  64,128,256,512:
-                  begin
-                      fetch_r_rdata_int   = init_rdata_i[0];
-                  end
-                endcase
+                fetch_r_rdata_int   = init_rdata_i[0];
 
 
                 fetch_r_ID_o        = fetch_ID_int;
@@ -645,7 +624,7 @@ module share_icache_controller
             INVALIDATE:
             begin
                 fetch_grant_o    = 1'b0;
-                enable_pipeline  = 1'b0;
+                clear_pipeline   = 1'b1;
 
                 // TAGRAM SIGNALS
                 TAG_addr_o       =  CounterINV;
@@ -674,7 +653,7 @@ module share_icache_controller
             DO_SEL_FLUSH:
             begin
                fetch_grant_o    = 1'b0;
-               enable_pipeline  = 1'b0;
+               clear_pipeline   = 1'b1;
 
                TAG_addr_o =  ctrl_sel_flush_addr_i[INDEX_MSB_SH : INDEX_LSB_SH];
                TAG_req_o   =  '1;
@@ -773,6 +752,15 @@ module share_icache_controller
                               if(ctrl_req_disable_icache_i | ctrl_req_flush_icache_i | ctrl_sel_flush_req_i )
                               begin
                                 fetch_grant_o       = 1'b0;
+
+                                 if(ctrl_req_disable_icache_i)
+                                   begin
+                                      NS          = DISABLED_ICACHE;
+                                   end
+                                 else if(ctrl_sel_flush_req_i)
+                                   NS = DO_SEL_FLUSH;
+                                 else
+                                   NS = INVALIDATE;  // we are here because one of the 3 ctrl signal is one
                               end
                               else
                               begin
