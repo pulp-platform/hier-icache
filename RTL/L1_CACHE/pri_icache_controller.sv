@@ -112,7 +112,8 @@ module pri_icache_controller
    input  logic                                             refill_gnt_i,
    output logic [FETCH_ADDR_WIDTH-1:0]                      refill_addr_o,
    input  logic                                             refill_r_valid_i,
-   input  logic [FETCH_DATA_WIDTH-1:0]                      refill_r_data_i
+   input  logic [FETCH_DATA_WIDTH-1:0]                      refill_r_data_i,
+   output logic                                             idle_state_o
 );
 
    typedef logic [NB_WAYS-1:0]                              logic_nbways;
@@ -212,6 +213,8 @@ module pri_icache_controller
    logic                                                    miss_counter_enable;
    logic                                                    miss_counter_enable_delay;
 
+   assign idle_state_o = ( CS == IDLE_ENABLED ) ? 1'b1 : 1'b0;   
+   
 `ifdef FEATURE_ICACHE_STAT
 
    logic [31:0]                                             eviction_counter;

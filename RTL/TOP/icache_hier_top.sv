@@ -235,10 +235,13 @@ module icache_hier_top
    logic [NB_CORES - 1 :0][31:0]                         congestion_counter;
 
    logic [NB_CORES-1:0]                                  pri_clk;
+
+   logic [NB_CORES-1:0]                                  pri_idle_state;
+   
    always_comb begin      
       pri_clk[0] = clk;      
       for(int k=1; k<NB_CORES; k++)begin
-         if(lockstep_mode_i)
+         if(lockstep_mode_i && pri_idle_state[k])
            pri_clk[k] = 1'b0;
          else
            pri_clk[k] = clk;         
@@ -371,7 +374,9 @@ module icache_hier_top
             .cache_is_flushed_o   ( IC_ctrl_unit_bus_pri[i].flush_ack            ),
             .flush_set_ID_req_i   ( IC_ctrl_unit_bus_pri[i].sel_flush_req        ),
             .flush_set_ID_addr_i  ( IC_ctrl_unit_bus_pri[i].sel_flush_addr       ),
-            .flush_set_ID_ack_o   ( IC_ctrl_unit_bus_pri[i].sel_flush_ack        )
+            .flush_set_ID_ack_o   ( IC_ctrl_unit_bus_pri[i].sel_flush_ack        ),
+
+            .idle_state_o         ( pri_idle_state[i]                            )
 
         `ifdef FEATURE_ICACHE_STAT
              ,
