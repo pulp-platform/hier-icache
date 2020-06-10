@@ -35,8 +35,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`define USE_REQ_BUFF
-`define USE_RESP_BUFF
 `include "pulp_soc_defines.sv"
 
 module pri_icache
@@ -330,103 +328,40 @@ module pri_icache
       end
    endgenerate
 
+  assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
+  assign refill_req_o   = refill_req_int;
+  assign refill_gnt_int = refill_gnt_i;
 
-`ifdef USE_REQ_BUFF
-      generic_fifo
-      #(
-         .DATA_WIDTH ( 32  ),
-         .DATA_DEPTH ( 2   )
-      )
-      Refill_Req_Buffer
-      (
-         .clk           ( clk             ),
-         .rst_n         ( rst_n           ),
-
-         .data_i        ( {refill_addr_int[31:4], 4'h0} ),
-         .valid_i       ( refill_req_int  ),
-         .grant_o       ( refill_gnt_int  ),
-
-         .data_o        ( refill_addr_o   ),
-         .valid_o       ( refill_req_o    ),
-         .grant_i       ( refill_gnt_i    ),
-         .test_mode_i   ( test_en_i       )
-      );
-
-      generic_fifo
-      #(
-         .DATA_WIDTH ( 32  ),
-         .DATA_DEPTH ( 2   )
-      )
-      pre_Refill_Req_Buffer
-      (
-         .clk           ( clk             ),
-         .rst_n         ( rst_n           ),
-
-         .data_i        ( {pre_refill_addr_int[31:4], 4'h0} ),
-         .valid_i       ( pre_refill_req_int  ),
-         .grant_o       ( pre_refill_gnt_int  ),
-
-         .data_o        ( pre_refill_addr_o   ),
-         .valid_o       ( pre_refill_req_o    ),
-         .grant_i       ( pre_refill_gnt_i    ),
-         .test_mode_i   ( test_en_i           )
-      );
-`else
-     assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
-     assign refill_req_o   = refill_req_int;
-     assign refill_gnt_int = refill_gnt_i;
-
-     assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
-     assign pre_refill_req_o   = pre_refill_req_int;
-     assign pre_refill_gnt_int = pre_refill_gnt_i;
-`endif
+  assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
+  assign pre_refill_req_o   = pre_refill_req_int;
+  assign pre_refill_gnt_int = pre_refill_gnt_i;
 
 
- `ifdef USE_RESP_BUFF
-      generic_fifo
-      #(
-         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
-         .DATA_DEPTH ( 2                  )
-      )
-      Refill_Resp_Buffer
-      (
-         .clk           ( clk                ),
-         .rst_n         ( rst_n              ),
+  always_ff @(posedge clk, negedge rst_n)
+    begin
+      if(~rst_n) begin
+        refill_r_data_int <= '0;
+        refill_r_valid_int <= '0;
+      end else begin
+        refill_r_valid_int <= refill_r_valid_i;
+        if (refill_r_valid_i) begin
+          refill_r_data_int  <= refill_r_data_i;
+        end
+      end
+    end
 
-         .data_i        ( refill_r_data_i    ),
-         .valid_i       ( refill_r_valid_i   ),
-         .grant_o       (                    ), // nobody is listening
+  always_ff @(posedge clk, negedge rst_n)
+    begin
+      if(~rst_n) begin
+        pre_refill_r_data_int <= '0;
+        pre_refill_r_valid_int <= '0;
+      end else begin
+        pre_refill_r_valid_int <= pre_refill_r_valid_i;
 
-         .data_o        ( refill_r_data_int  ),
-         .valid_o       ( refill_r_valid_int ),
-         .grant_i       ( 1'b1               ), // always grant it
-         .test_mode_i   ( test_en_i          )
-      );
-
-      generic_fifo
-      #(
-         .DATA_WIDTH ( REFILL_DATA_WIDTH  ),
-         .DATA_DEPTH ( 2                  )
-      )
-      Pre_refill_Resp_Buffer
-      (
-         .clk           ( clk                ),
-         .rst_n         ( rst_n              ),
-
-         .data_i        ( pre_refill_r_data_i    ),
-         .valid_i       ( pre_refill_r_valid_i   ),
-         .grant_o       (                        ), // nobody is listening
-
-         .data_o        ( pre_refill_r_data_int  ),
-         .valid_o       ( pre_refill_r_valid_int ),
-         .grant_i       ( 1'b1                   ), // always grant it
-         .test_mode_i   ( test_en_i              )
-      );
-`else
-     assign refill_r_data_int    = refill_r_data_i;
-     assign refill_r_valid_int   = refill_r_valid_i;
-     assign pre_refill_r_data_int    = pre_refill_r_data_i;
-     assign pre_refill_r_valid_int   = pre_refill_r_valid_i;
-`endif
+        if (pre_refill_r_valid_i) begin
+          pre_refill_r_data_int  <= pre_refill_r_data_i;
+        end
+      end
+    end
 
 endmodule // fc_icache

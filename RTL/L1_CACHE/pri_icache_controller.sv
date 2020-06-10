@@ -143,7 +143,10 @@ module pri_icache_controller
    logic                                                    prefetchc_tag_check_C;
    logic                                                    prefetch_hit_C;
    logic                                                    prefetch_stop;
-   logic                                                    is_branch;
+   logic                                                    s_is_branch;
+   logic                                                    r_is_not_branch;
+   logic                                                    s_next_line;
+   logic                                                    r_new_cache_line;
 
    logic [NB_WAYS-1:0]                                      DATA_rd_req_int;
    logic [NB_WAYS-1:0]                                      DATA_wr_req_int;
@@ -166,12 +169,11 @@ module pri_icache_controller
    logic [REFILL_DATA_WIDTH/FETCH_DATA_WIDTH-1:0][FETCH_DATA_WIDTH-1:0] pre_refill_r_data_int;
    logic [REFILL_DATA_WIDTH/FETCH_DATA_WIDTH-1:0][FETCH_DATA_WIDTH-1:0] DATA_rdata_hit_int;
 
-   logic [FETCH_DATA_WIDTH-1:0]                             prefetch_conflict_DATA_wdata;
-
    assign refill_r_data_int     = refill_r_data_i;
    assign pre_refill_r_data_int = pre_refill_r_data_i;
 
-   assign is_branch = (fetch_addr_i != fetch_addr_P);
+   assign s_is_branch = (fetch_addr_i[31:4] != fetch_addr_P[31:4]);
+   assign s_next_line = (fetch_addr_i[31:4] != fetch_addr_Q[31:4]);
 
    assign DATA_rd_req_o   = DATA_rd_req_int;
    assign DATA_rd_addr_o  = DATA_addr_int;
@@ -278,12 +280,28 @@ module pri_icache_controller
              fetch_addr_Q             <= '0;
              fetch_way_Q              <= '0;
 
+             r_is_not_branch          <= 1'b0;
+             r_new_cache_line         <= 1'b0;
+
              counter_FLUSH_CS         <= '0;
           end
         else
           begin
              CS <= NS;
              counter_FLUSH_CS <= counter_FLUSH_NS;
+
+            if(enable_l1_l15_prefetch_i) begin
+              if (fetch_req_i) begin
+                // When in 32bits version, prefetch is not starting or starting not hit, always treat as branch
+                r_is_not_branch <= ~s_is_branch & prefetch_start & ~prefetch_hit;
+
+                // When in 32bits, indicate an prefetch when 128bits address changes.
+                r_new_cache_line <= s_next_line;
+              end
+            end else begin
+              r_is_not_branch <= 1'b0;
+              r_new_cache_line <= 1'b0;
+            end
 
              if (CS == IDLE_ENABLED)
                fetch_way_Q <= '0;
@@ -311,7 +329,6 @@ module pri_icache_controller
 
              prefetchc_tag_check_C <= 1'b0;
              prefetch_hit_C <= 1'b0;
-             prefetch_conflict_DATA_wdata <= '0;
           end
         else
           begin
@@ -322,20 +339,13 @@ module pri_icache_controller
 
              if(enable_l1_l15_prefetch_i)
                begin
-                  if (fetch_req_i & !is_branch & pre_refill_r_valid_i) begin
-                     case(ADDR_OFFSET)
-                       0: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[0];
-                       2: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[fetch_addr_P[3:2]];
-                       default: prefetch_conflict_DATA_wdata <= pre_refill_r_data_int[0];
-                     endcase
-                  end
 
                   fetch_req_C[1] <= fetch_req_C[0];
 
-                  if (fetch_req_i & fetch_gnt_o & prefetch_start & ~prefetch_hit) begin
+                  if (fetch_req_i & fetch_gnt_o & prefetch_start & ~prefetch_hit & s_next_line) begin
                      fetch_req_C[1] <= fetch_req_C[1] ? 1'b0 : fetch_req_C[0];
                      fetch_req_C[0] <= 1'b1;
-                     fetch_addr_C <= fetch_addr_i + 'h10;
+                     fetch_addr_C <= {fetch_addr_i[31:4], 4'h0} + 'h10;
                   end else if (prefetch_stop | prefetch_hit) begin
                     fetch_req_C[0] <= 1'b0;
                   end
@@ -350,7 +360,7 @@ module pri_icache_controller
                   end
 
                   if (fetch_req_i & ~prefetch_start) begin
-                     fetch_addr_P  <= fetch_addr_i + 'h10;
+                     fetch_addr_P  <= {fetch_addr_i[31:4], 4'h0} + 'h10;
                      fetch_req_P   <= 1'b1;
                   end else if (|fetch_req_C & ~prefetch_start) begin
                      fetch_addr_P  <= fetch_addr_C;
@@ -369,7 +379,6 @@ module pri_icache_controller
 
                   prefetchc_tag_check_C <= 1'b0;
                   prefetch_hit_C <= 1'b0;
-                  prefetch_conflict_DATA_wdata <= '0;
                end
           end
      end
@@ -574,7 +583,7 @@ module pri_icache_controller
 
                     if(fetch_req_i)
                       if (enable_l1_l15_prefetch_i)
-                        if(is_branch)
+                        if(s_is_branch)
                           NS = TAG_LOOKUP;
                         else
                           if(prefetch_hit)
@@ -594,12 +603,17 @@ module pri_icache_controller
 
           CONFLICT_REFILL:
             begin
-               hit_counter_enable = 1'b1;
+              hit_counter_enable = 1'b1;
 
-               fetch_rvalid_o  = 1'b1;
-               fetch_rdata_o   = prefetch_conflict_DATA_wdata;
+              fetch_rvalid_o  = 1'b1;
 
-               NS = IDLE_ENABLED;
+              case(ADDR_OFFSET)
+                0: fetch_rdata_o <= pre_refill_r_data_int[0];
+                2: fetch_rdata_o <= pre_refill_r_data_int[fetch_addr_Q[3:2]];
+                default: fetch_rdata_o <= pre_refill_r_data_int[0];
+              endcase
+
+              NS = IDLE_ENABLED;
             end
 
           WAIT_PREFETCH:
@@ -651,13 +665,19 @@ module pri_icache_controller
                       default: fetch_rdata_o      = DATA_rdata_hit_int[0];
                     endcase
                  end
-               else
+               else if (r_is_not_branch) begin // When in 32bit version, reuse the prefetch if not branch
+
+                  hit_counter_enable = 1'b1;
+
+                 if(pre_refill_r_valid_i)
+                   NS = CONFLICT_REFILL;
+                 else
+                   NS = WAIT_PREFETCH;
+               end else
                  begin : MISS
                     miss_counter_enable      = 1'b1;
 
                     enable_pipe      = 1'b0;
-                    refill_req_o     = 1'b1;
-                    refill_addr_o    = fetch_addr_Q;
 
                     save_fetch_way   = 1'b1;
                     // This check is postponed because the tag Check is complex. better to do
@@ -673,10 +693,7 @@ module pri_icache_controller
                          update_lfsr = 1'b0;
                       end
 
-                    if(refill_gnt_i)
-                      NS = WAIT_REFILL_DONE;
-                    else
-                      NS = WAIT_REFILL_GNT;
+                   NS = WAIT_REFILL_GNT;
                  end
             end //~TAG_LOOKUP
 
@@ -766,10 +783,8 @@ module pri_icache_controller
 
                if (bypass_icache_i | ~enable_l1_l15_prefetch_i) begin
                   PRE_NS = PRE_DISABLE;
-               end if ((|fetch_req_C | fetch_req_P)) begin
+               end else if ((|fetch_req_C | fetch_req_P)) begin
                   if (prefetchc_tag_check_C & ~prefetch_hit_C) begin
-                     prefetch_start = 1'b1;
-                     pre_refill_req_o  = 1'b1;
 
                      save_fetch_way_p   = 1'b1;
                      // This check is postponed because the tag Check is complex. better to do
@@ -785,11 +800,8 @@ module pri_icache_controller
                           update_lfsr_p = 1'b0;
                        end
 
-                     if(pre_refill_gnt_i)
-                       PRE_NS = PRE_WAIT_REFILL_DONE;
-                     else
-                       PRE_NS = PRE_WAIT_REFILL_GNT;
-                  end else if (~fetch_req_i)
+                    PRE_NS = PRE_WAIT_REFILL_GNT;
+                  end else if (~fetch_req_i | r_new_cache_line)
                     PRE_NS = PRE_TAG_LOOKUP;
                   else
                     PRE_NS = PRE_IDLE;
@@ -810,7 +822,6 @@ module pri_icache_controller
                  end
                else
                  begin : PRE_MISS
-                    pre_refill_req_o  = 1'b1;
 
                     save_fetch_way_p   = 1'b1;
                     // This check is postponed because the tag Check is complex. better to do
@@ -826,10 +837,7 @@ module pri_icache_controller
                          update_lfsr_p = 1'b0;
                       end
 
-                    if(pre_refill_gnt_i)
-                      PRE_NS = PRE_WAIT_REFILL_DONE;
-                    else
-                      PRE_NS = PRE_WAIT_REFILL_GNT;
+                   PRE_NS = PRE_WAIT_REFILL_GNT;
                  end
             end
 
