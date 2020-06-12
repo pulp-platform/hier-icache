@@ -608,9 +608,9 @@ module pri_icache_controller
               fetch_rvalid_o  = 1'b1;
 
               case(ADDR_OFFSET)
-                0: fetch_rdata_o <= pre_refill_r_data_int[0];
-                2: fetch_rdata_o <= pre_refill_r_data_int[fetch_addr_Q[3:2]];
-                default: fetch_rdata_o <= pre_refill_r_data_int[0];
+                0: fetch_rdata_o = pre_refill_r_data_int[0];
+                2: fetch_rdata_o = pre_refill_r_data_int[fetch_addr_Q[3:2]];
+                default: fetch_rdata_o = pre_refill_r_data_int[0];
               endcase
 
               NS = IDLE_ENABLED;
