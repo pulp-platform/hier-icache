@@ -35,6 +35,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`define USE_REQ_BUFF
 `include "pulp_soc_defines.sv"
 
 module pri_icache
@@ -134,12 +135,16 @@ module pri_icache
    logic                                  refill_gnt_int;
    logic                                  refill_r_valid_int;
    logic [REFILL_DATA_WIDTH-1:0]          refill_r_data_int;
+   logic [REFILL_DATA_WIDTH-1:0]          refill_r_data_delay;
+   logic [REFILL_DATA_WIDTH-1:0]          refill_r_data_keep;
 
    logic [31:0]                           pre_refill_addr_int;
    logic                                  pre_refill_req_int;
    logic                                  pre_refill_gnt_int;
    logic                                  pre_refill_r_valid_int;
    logic [REFILL_DATA_WIDTH-1:0]          pre_refill_r_data_int;
+   logic [REFILL_DATA_WIDTH-1:0]          pre_refill_r_data_delay;
+   logic [REFILL_DATA_WIDTH-1:0]          pre_refill_r_data_keep;
 
 
    //  ██████╗ █████╗  ██████╗██╗  ██╗███████╗         ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  ██████╗ ██╗     ██╗     ███████╗██████╗
@@ -328,39 +333,86 @@ module pri_icache
       end
    endgenerate
 
-  assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
-  assign refill_req_o   = refill_req_int;
-  assign refill_gnt_int = refill_gnt_i;
 
-  assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
-  assign pre_refill_req_o   = pre_refill_req_int;
-  assign pre_refill_gnt_int = pre_refill_gnt_i;
+`ifdef USE_REQ_BUFF
+      generic_fifo
+      #(
+         .DATA_WIDTH ( 32  ),
+         .DATA_DEPTH ( 2   )
+      )
+      Refill_Req_Buffer
+      (
+         .clk           ( clk             ),
+         .rst_n         ( rst_n           ),
 
+         .data_i        ( {refill_addr_int[31:4], 4'h0} ),
+         .valid_i       ( refill_req_int  ),
+         .grant_o       ( refill_gnt_int  ),
+
+         .data_o        ( refill_addr_o   ),
+         .valid_o       ( refill_req_o    ),
+         .grant_i       ( refill_gnt_i    ),
+         .test_mode_i   ( test_en_i       )
+      );
+
+      generic_fifo
+      #(
+         .DATA_WIDTH ( 32  ),
+         .DATA_DEPTH ( 2   )
+      )
+      pre_Refill_Req_Buffer
+      (
+         .clk           ( clk             ),
+         .rst_n         ( rst_n           ),
+
+         .data_i        ( {pre_refill_addr_int[31:4], 4'h0} ),
+         .valid_i       ( pre_refill_req_int  ),
+         .grant_o       ( pre_refill_gnt_int  ),
+
+         .data_o        ( pre_refill_addr_o   ),
+         .valid_o       ( pre_refill_req_o    ),
+         .grant_i       ( pre_refill_gnt_i    ),
+         .test_mode_i   ( test_en_i           )
+      );
+`else
+     assign refill_addr_o  = {refill_addr_int[31:4], 4'h0};
+     assign refill_req_o   = refill_req_int;
+     assign refill_gnt_int = refill_gnt_i;
+
+     assign pre_refill_addr_o  = {pre_refill_addr_int[31:4], 4'h0};
+     assign pre_refill_req_o   = pre_refill_req_int;
+     assign pre_refill_gnt_int = pre_refill_gnt_i;
+`endif
+
+  assign refill_r_data_int = refill_r_valid_int ? refill_r_data_delay : refill_r_data_keep;
 
   always_ff @(posedge clk, negedge rst_n)
     begin
       if(~rst_n) begin
-        refill_r_data_int <= '0;
+        refill_r_data_delay <= '0;
+        refill_r_data_keep <= '0;
         refill_r_valid_int <= '0;
       end else begin
         refill_r_valid_int <= refill_r_valid_i;
-        if (refill_r_valid_i) begin
-          refill_r_data_int  <= refill_r_data_i;
+        refill_r_data_delay  <= refill_r_data_i;
+	 if (refill_r_valid_int)
+	   refill_r_data_keep  <= refill_r_data_delay;
         end
-      end
     end
 
+  assign pre_refill_r_data_int = pre_refill_r_valid_int ? pre_refill_r_data_delay : pre_refill_r_data_keep;
+ 
   always_ff @(posedge clk, negedge rst_n)
     begin
       if(~rst_n) begin
-        pre_refill_r_data_int <= '0;
+        pre_refill_r_data_delay <= '0;
+        pre_refill_r_data_keep <= '0;
         pre_refill_r_valid_int <= '0;
       end else begin
         pre_refill_r_valid_int <= pre_refill_r_valid_i;
-
-        if (pre_refill_r_valid_i) begin
-          pre_refill_r_data_int  <= pre_refill_r_data_i;
-        end
+        pre_refill_r_data_delay  <= pre_refill_r_data_i;
+	 if (pre_refill_r_valid_int)
+	   pre_refill_r_data_keep  <= pre_refill_r_data_delay;
       end
     end
 

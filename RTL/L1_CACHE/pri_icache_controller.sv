@@ -678,6 +678,8 @@ module pri_icache_controller
                     miss_counter_enable      = 1'b1;
 
                     enable_pipe      = 1'b0;
+                    refill_req_o     = 1'b1;
+                    refill_addr_o    = fetch_addr_Q;
 
                     save_fetch_way   = 1'b1;
                     // This check is postponed because the tag Check is complex. better to do
@@ -693,7 +695,10 @@ module pri_icache_controller
                          update_lfsr = 1'b0;
                       end
 
-                   NS = WAIT_REFILL_GNT;
+                    if(refill_gnt_i)
+                      NS = WAIT_REFILL_DONE;
+                    else
+                      NS = WAIT_REFILL_GNT;
                  end
             end //~TAG_LOOKUP
 
@@ -785,6 +790,8 @@ module pri_icache_controller
                   PRE_NS = PRE_DISABLE;
                end else if ((|fetch_req_C | fetch_req_P)) begin
                   if (prefetchc_tag_check_C & ~prefetch_hit_C) begin
+                     prefetch_start = 1'b1;
+                     pre_refill_req_o  = 1'b1;
 
                      save_fetch_way_p   = 1'b1;
                      // This check is postponed because the tag Check is complex. better to do
@@ -800,8 +807,11 @@ module pri_icache_controller
                           update_lfsr_p = 1'b0;
                        end
 
-                    PRE_NS = PRE_WAIT_REFILL_GNT;
-                  end else if (~fetch_req_i | r_new_cache_line)
+                     if(pre_refill_gnt_i)
+                       PRE_NS = PRE_WAIT_REFILL_DONE;
+                     else
+                       PRE_NS = PRE_WAIT_REFILL_GNT;
+                  end else if (~fetch_req_i)
                     PRE_NS = PRE_TAG_LOOKUP;
                   else
                     PRE_NS = PRE_IDLE;
@@ -822,6 +832,7 @@ module pri_icache_controller
                  end
                else
                  begin : PRE_MISS
+                    pre_refill_req_o  = 1'b1;
 
                     save_fetch_way_p   = 1'b1;
                     // This check is postponed because the tag Check is complex. better to do
@@ -837,7 +848,10 @@ module pri_icache_controller
                          update_lfsr_p = 1'b0;
                       end
 
-                   PRE_NS = PRE_WAIT_REFILL_GNT;
+                    if(pre_refill_gnt_i)
+                      PRE_NS = PRE_WAIT_REFILL_DONE;
+                    else
+                      PRE_NS = PRE_WAIT_REFILL_GNT;
                  end
             end
 
