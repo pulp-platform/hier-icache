@@ -119,9 +119,6 @@ module pri_icache_controller
 
    typedef logic [NB_WAYS-1:0]                              logic_nbways;
 
-   localparam OFFSET      = $clog2(SCM_DATA_WIDTH*CACHE_LINE)-3;
-   localparam ADDR_OFFSET = $clog2(REFILL_DATA_WIDTH/FETCH_DATA_WIDTH);
-
    logic [FETCH_ADDR_WIDTH-1:0]                             fetch_addr_Q;
    logic [NB_WAYS-1:0]                                      fetch_way_Q;
 
@@ -432,11 +429,13 @@ module pri_icache_controller
 
         fetch_gnt_o        = 1'b0;
         fetch_rvalid_o     = 1'b0;
-        case(ADDR_OFFSET)
-          0:       fetch_rdata_o      = refill_r_data_int[0];
-          2:       fetch_rdata_o      = refill_r_data_int[fetch_addr_Q[3:2]];
-          default: fetch_rdata_o      = refill_r_data_int[0];
-        endcase
+        
+	`ifdef HIERARCHY_ICACHE_32BIT
+	fetch_rdata_o      = refill_r_data_int[fetch_addr_Q[3:2]];
+        `else
+        fetch_rdata_o      = refill_r_data_int[0];
+	`endif
+
         refill_req_o       = 1'b0;
         refill_addr_o      = fetch_addr_Q;
         fetch_way_int      = '0;
@@ -607,11 +606,11 @@ module pri_icache_controller
 
               fetch_rvalid_o  = 1'b1;
 
-              case(ADDR_OFFSET)
-                0: fetch_rdata_o = pre_refill_r_data_int[0];
-                2: fetch_rdata_o = pre_refill_r_data_int[fetch_addr_Q[3:2]];
-                default: fetch_rdata_o = pre_refill_r_data_int[0];
-              endcase
+	       `ifdef HIERARCHY_ICACHE_32BIT
+	       fetch_rdata_o = pre_refill_r_data_int[fetch_addr_Q[3:2]];
+               `else
+               fetch_rdata_o = pre_refill_r_data_int[0];
+	       `endif
 
               NS = IDLE_ENABLED;
             end
@@ -619,11 +618,11 @@ module pri_icache_controller
           WAIT_PREFETCH:
             begin
                fetch_rvalid_o  = pre_refill_r_valid_i;
-               case(ADDR_OFFSET)
-                 0:       fetch_rdata_o      = pre_refill_r_data_int[0];
-                 2:       fetch_rdata_o      = pre_refill_r_data_int[fetch_addr_Q[3:2]];
-                 default: fetch_rdata_o      = pre_refill_r_data_int[0];
-               endcase
+	       `ifdef HIERARCHY_ICACHE_32BIT
+	       fetch_rdata_o      = pre_refill_r_data_int[fetch_addr_Q[3:2]];
+               `else
+               fetch_rdata_o      = pre_refill_r_data_int[0];
+	       `endif
 
                if (pre_refill_r_valid_i)
                  begin
@@ -659,12 +658,12 @@ module pri_icache_controller
                       end
                     fetch_rvalid_o  = 1'b1;
 
-                    case(ADDR_OFFSET)
-                      0:       fetch_rdata_o      = DATA_rdata_hit_int[0];
-                      2:       fetch_rdata_o      = DATA_rdata_hit_int[fetch_addr_Q[3:2]];
-                      default: fetch_rdata_o      = DATA_rdata_hit_int[0];
-                    endcase
-                 end
+                    `ifdef HIERARCHY_ICACHE_32BIT
+		    fetch_rdata_o      = DATA_rdata_hit_int[fetch_addr_Q[3:2]];
+                    `else
+                    fetch_rdata_o      = DATA_rdata_hit_int[0];
+                    `endif
+		 end
                else if (r_is_not_branch) begin // When in 32bit version, reuse the prefetch if not branch
 
                   hit_counter_enable = 1'b1;
@@ -677,7 +676,6 @@ module pri_icache_controller
                  begin : MISS
                     miss_counter_enable      = 1'b1;
 
-                    enable_pipe      = 1'b0;
                     refill_req_o     = 1'b1;
                     refill_addr_o    = fetch_addr_Q;
 
