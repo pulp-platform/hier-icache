@@ -641,6 +641,12 @@ module pri_icache_controller
                fetch_gnt_o          = fetch_req_i;
                enable_pipe          = fetch_req_i;
 
+               `ifdef HIERARCHY_ICACHE_32BIT
+	       fetch_rdata_o      = DATA_rdata_hit_int[fetch_addr_Q[3:2]];
+               `else
+               fetch_rdata_o      = DATA_rdata_hit_int[0];
+               `endif
+
                //Read the DATA and TAG
 
                if(|way_match[0])
@@ -657,12 +663,6 @@ module pri_icache_controller
                          NS = TAG_LOOKUP;
                       end
                     fetch_rvalid_o  = 1'b1;
-
-                    `ifdef HIERARCHY_ICACHE_32BIT
-		    fetch_rdata_o      = DATA_rdata_hit_int[fetch_addr_Q[3:2]];
-                    `else
-                    fetch_rdata_o      = DATA_rdata_hit_int[0];
-                    `endif
 		 end
                else if (r_is_not_branch) begin // When in 32bit version, reuse the prefetch if not branch
 
