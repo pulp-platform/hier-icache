@@ -84,7 +84,8 @@ module pri_icache
    input  logic                           flush_set_ID_req_i,
    input  logic [FETCH_ADDR_WIDTH-1:0]    flush_set_ID_addr_i,
    output logic                           flush_set_ID_ack_o,
-   output logic                           idle_state_o
+   output logic                           idle_state_o,
+   input logic                            lockstep_mode_i
 
 `ifdef FEATURE_ICACHE_STAT
     ,
@@ -227,7 +228,8 @@ module pri_icache
       .refill_r_valid_i         ( refill_r_valid_int       ),
       .refill_r_data_i          ( refill_r_data_int        ),
 
-      .idle_state_o             ( idle_state_o             )
+      .idle_state_o             ( idle_state_o             ),
+      .lockstep_mode_i          ( lockstep_mode_i          )
    );
 
 

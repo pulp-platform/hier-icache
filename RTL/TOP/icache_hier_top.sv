@@ -142,7 +142,8 @@ module icache_hier_top
 
    SP_ICACHE_CTRL_UNIT_BUS.Slave                        IC_ctrl_unit_bus_main[SH_NB_BANKS],
    PRI_ICACHE_CTRL_UNIT_BUS.Slave                       IC_ctrl_unit_bus_pri[NB_CORES],
-   input  logic                                         lockstep_mode_i
+   input  logic                                         lockstep_mode_i,
+   input  logic                                         lsm_req_i
 );
 
    // signals from PRI cache and interconnect
@@ -235,21 +236,39 @@ module icache_hier_top
    logic [NB_CORES - 1 :0][31:0]                         congestion_counter;
 
    logic [NB_CORES-1:0]                                  pri_clk;
-
    logic [NB_CORES-1:0]                                  pri_idle_state;
-   
-   always_comb begin      
-      pri_clk[0] = clk;      
-      for(int k=1; k<NB_CORES; k++)begin
-         if(lockstep_mode_i && pri_idle_state[k])
-           pri_clk[k] = 1'b0;
-         else
-           pri_clk[k] = clk;         
-      end                            
-   end
+   logic [NB_CORES-1:0]                                  pri_clk_en;
 
-  
-   genvar i;
+
+//   always_ff @(posedge clk, negedge rst_n) begin
+//      if (!rst_n)
+//        pri_clk_en <= '0;
+//      else begin
+//         for(int j=1; j<NB_CORES; j++)
+//            pri_clk_en[j] <= !(lockstep_mode_i & pri_idle_state[j]) | lsm_req_i;
+//      end
+//   end
+   
+   assign pri_clk[0] = clk;
+   
+   genvar i;             
+   generate
+      for (i=1; i<NB_CORES; i++)
+        assign pri_clk_en[i] = !(lockstep_mode_i & pri_idle_state[i]) | lsm_req_i;
+
+      for(i=1; i<NB_CORES; i++) begin: PRI_CACHE_CLK
+         cluster_clock_gating pri_clock_gate_i
+                (
+                 .clk_i     ( clk           ),
+                 .en_i      ( pri_clk_en[i] ),
+                 .test_en_i ( test_en_i     ),
+                 .clk_o     ( pri_clk[i]    )
+                 );
+      end
+   endgenerate
+
+   
+
    generate
 
 `ifdef FEATURE_ICACHE_STAT
@@ -325,7 +344,69 @@ module icache_hier_top
       // ██║     ██║  ██║██║███████╗██║╚██████╗██║  ██║╚██████╗██║  ██║███████╗███████║ //
       // ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝ //
       ////////////////////////////////////////////////////////////////////////////////////
-      for(i=0;i<NB_CORES;i++)
+      assign IC_ctrl_unit_bus_pri[0].ctrl_cong_count = congestion_counter[0];
+
+      pri_icache
+      #(
+         .FETCH_ADDR_WIDTH     ( FETCH_ADDR_WIDTH ), //= 32,       // Size of the fetch address
+         .FETCH_DATA_WIDTH     ( FETCH_DATA_WIDTH ), //= 128,      // Size of the fetch data
+
+         .NB_WAYS              ( PRI_NB_WAYS      ), //= 4,        // Cache associativity
+         .CACHE_SIZE           ( PRI_CACHE_SIZE   ), //= 512      // Ccache capacity in Byte
+         .CACHE_LINE           ( PRI_CACHE_LINE   ), //= 1,        // in word of [FETCH_DATA_WIDTH]
+
+         .USE_REDUCED_TAG      ( USE_REDUCED_TAG  ), //= "TRUE",   // TRUE | FALSE
+         .L2_SIZE              ( L2_SIZE          ) //= 512*1024  // Size of max(L2 ,ROM) program memory in Byte
+      )
+      i_pri_icache
+      (
+         .clk                  ( pri_clk[0] ),
+         .rst_n                ( rst_n      ),
+         .test_en_i            ( test_en_i  ),
+
+         .fetch_req_i          ( fetch_req_i[0]                           ),
+         .fetch_addr_i         ( fetch_addr_i[0]                          ),
+         .fetch_gnt_o          ( fetch_gnt_o[0]                           ),
+         .fetch_rvalid_o       ( fetch_rvalid_o[0]                        ),
+         .fetch_rdata_o        ( fetch_rdata_o[0]                         ),
+
+         .refill_req_o         ( refill_req_int[0]                        ),
+         .refill_gnt_i         ( refill_gnt_int[0]                        ),
+         .refill_addr_o        ( refill_addr_int[0]                       ),
+         .refill_r_valid_i     ( refill_r_valid_int[0]                    ),
+         .refill_r_data_i      ( refill_r_data_int[0]                     ),
+
+         .pre_refill_req_o     ( refill_req_int[NB_CORES]                 ),
+         .pre_refill_gnt_i     ( refill_gnt_int[NB_CORES]                 ),
+         .pre_refill_addr_o    ( refill_addr_int[NB_CORES]                ),
+         .pre_refill_r_valid_i ( refill_r_valid_int[NB_CORES]             ),
+         .pre_refill_r_data_i  ( refill_r_data_int[NB_CORES]              ),
+
+         .enable_l1_l15_prefetch_i ( enable_l1_l15_prefetch_i[0]          ),
+
+         .bypass_icache_i      ( IC_ctrl_unit_bus_pri[0].bypass_req       ),
+         .cache_is_bypassed_o  ( IC_ctrl_unit_bus_pri[0].bypass_ack       ),
+         .flush_icache_i       ( IC_ctrl_unit_bus_pri[0].flush_req        ),
+         .cache_is_flushed_o   ( IC_ctrl_unit_bus_pri[0].flush_ack        ),
+         .flush_set_ID_req_i   ( IC_ctrl_unit_bus_pri[0].sel_flush_req    ),
+         .flush_set_ID_addr_i  ( IC_ctrl_unit_bus_pri[0].sel_flush_addr   ),
+         .flush_set_ID_ack_o   ( IC_ctrl_unit_bus_pri[0].sel_flush_ack    ),
+
+         .idle_state_o         ( pri_idle_state[0]                        ),
+         .lockstep_mode_i      ( 1'b0                                     )
+
+`ifdef FEATURE_ICACHE_STAT
+          ,
+          .bank_hit_count_o    ( IC_ctrl_unit_bus_pri[0].ctrl_hit_count   ),
+          .bank_trans_count_o  ( IC_ctrl_unit_bus_pri[0].ctrl_trans_count ),
+          .bank_miss_count_o   ( IC_ctrl_unit_bus_pri[0].ctrl_miss_count  ),
+
+          .ctrl_clear_regs_i   ( IC_ctrl_unit_bus_pri[0].ctrl_clear_regs  ),
+          .ctrl_enable_regs_i  ( IC_ctrl_unit_bus_pri[0].ctrl_enable_regs )
+`endif
+      );
+
+      for(i=1;i<NB_CORES;i++)
       begin : PRI_ICACHE
 
          assign IC_ctrl_unit_bus_pri[i].ctrl_cong_count = congestion_counter[i];
@@ -376,7 +457,8 @@ module icache_hier_top
             .flush_set_ID_addr_i  ( IC_ctrl_unit_bus_pri[i].sel_flush_addr       ),
             .flush_set_ID_ack_o   ( IC_ctrl_unit_bus_pri[i].sel_flush_ack        ),
 
-            .idle_state_o         ( pri_idle_state[i]                            )
+            .idle_state_o         ( pri_idle_state[i]                            ),
+            .lockstep_mode_i      ( lockstep_mode_i                              )
 
         `ifdef FEATURE_ICACHE_STAT
              ,

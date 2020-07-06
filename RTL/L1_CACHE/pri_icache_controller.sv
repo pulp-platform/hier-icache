@@ -113,7 +113,8 @@ module pri_icache_controller
    output logic [FETCH_ADDR_WIDTH-1:0]                      refill_addr_o,
    input  logic                                             refill_r_valid_i,
    input  logic [FETCH_DATA_WIDTH-1:0]                      refill_r_data_i,
-   output logic                                             idle_state_o
+   output logic                                             idle_state_o,
+   input logic                                              lockstep_mode_i
 );
 
    typedef logic [NB_WAYS-1:0]                              logic_nbways;
@@ -213,7 +214,7 @@ module pri_icache_controller
    logic                                                    miss_counter_enable;
    logic                                                    miss_counter_enable_delay;
 
-   assign idle_state_o = ( CS == IDLE_ENABLED ) ? 1'b1 : 1'b0;   
+   assign idle_state_o = ( CS == IDLE_ENABLED || CS == DISABLED_ICACHE ) ? 1'b1 : 1'b0;   
    
 `ifdef FEATURE_ICACHE_STAT
 
@@ -451,7 +452,8 @@ module pri_icache_controller
                  begin
                     // gnt = 1 directly when there is request
                     if (bypass_icache_i) begin
-                       fetch_gnt_o  = fetch_req_i;
+//                       if ( !lockstep_mode_i )
+                         fetch_gnt_o  = fetch_req_i;
 
                        if(fetch_req_i)
                          NS = BYPASS_REFILL;
