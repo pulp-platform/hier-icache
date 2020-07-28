@@ -520,14 +520,15 @@ endgenerate
             )
             DATA_RAM
             (
-                .clk     (   clk            ),
-                .rst_n   (   rst_n          ),
-                .addr    (   DATA_addr      ),
-                .req     (   DATA_req[i]    ),
-                .write   (   DATA_write     ),
-                .be      (   DATA_be        ),
-                .wdata   (   DATA_wdata     ),
-                .rdata   (   DATA_rdata[i]  )
+                .clk      (   clk            ),
+                .rst_n    (   rst_n          ),
+                .testmode (   test_en_i      ),
+                .addr     (   DATA_addr      ),
+                .req      (   DATA_req[i]    ),
+                .write    (   DATA_write     ),
+                .be       (   DATA_be        ),
+                .wdata    (   DATA_wdata     ),
+                .rdata    (   DATA_rdata[i]  )
             );
         end
 
@@ -542,13 +543,14 @@ endgenerate
             )
             TAG_RAM
             (
-                .clk     (   clk            ),
-                .rst_n   (   rst_n          ),
-                .addr    (   TAG_addr       ),
-                .req     (   TAG_req[i]     ),
-                .write   (   TAG_write      ),
-                .wdata   (   TAG_wdata      ),
-                .rdata   (   TAG_rdata[i]   )
+                .clk      (   clk            ),
+                .rst_n    (   rst_n          ),
+                .testmode (   test_en_i      ),
+                .addr     (   TAG_addr       ),
+                .req      (   TAG_req[i]     ),
+                .write    (   TAG_write      ),
+                .wdata    (   TAG_wdata      ),
+                .rdata    (   TAG_rdata[i]   )
             );
         end
 

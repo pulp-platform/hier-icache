@@ -21,6 +21,7 @@ module ram_ws_rs_data_scm
 (
     input  logic                        clk,
     input  logic                        rst_n,
+    input  logic                        testmode,
     input  logic [addr_width-1:0]       addr,
     input  logic                        req,
     input  logic                        write,
@@ -146,7 +147,7 @@ module ram_ws_rs_data_scm
     `ifdef PULP_FPGA_EMUL
         .rst_n       ( rst_n        ),
     `endif
-
+        .test_mode   ( testmode     ),
         // Read port
         .ReadEnable  ( req & ~write ),
         .ReadAddr    ( addr         ),

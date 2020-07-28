@@ -241,7 +241,7 @@ module pri_icache
       begin : _TAG_WAY_
 
 `ifndef PULP_FPGA_EMUL
-        register_file_2r_2w_icache
+        register_file_2r_2w_icache_test_wrap
 `else
         register_file_2r_2w_fpga
 `endif
@@ -253,7 +253,7 @@ module pri_icache
          (
             .clk         ( clk          ),
             .rst_n       ( rst_n        ),
-
+            .testmode_i  (test_en_i     ),
             // Read port
             .ren_a_i     ( TAG_rd_req_int[0][i]),
             .raddr_a_i   ( TAG_addr_int[0]     ),
@@ -297,6 +297,7 @@ module pri_icache
          DATA_BANK
          (
             .clk         ( clk          ),
+            .test_mode   (test_en_i     ),
          `ifdef PULP_FPGA_EMUL
             .rst_n       ( rst_n        ),
          `endif
