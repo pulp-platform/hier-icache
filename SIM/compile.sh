@@ -1,4 +1,6 @@
+#!/bin/bash
 
+BITS=$1
 rm -rf work
 
 #Dependancies!!!!
@@ -18,10 +20,22 @@ cd ../SIM
 
 # COMPILE THE RTL
  vlog -quiet -sv ../RTL/TOP/icache_hier_top.sv
+ echo "--------------------------------------"
+ if [ "$BITS" == "32" ]
+ then
+     echo "CORE USE 32 BITS INTERFACE"
+     echo "--------------------------------------"
+     vlog -quiet -sv ../RTL/L1_CACHE/pri_icache_controller.sv +define+HIERARCHY_ICACHE_32BIT
+ else
+     echo "CORE USE 128 BITS INTERFACE"
+     echo "--------------------------------------"
+     vlog -quiet -sv ../RTL/L1_CACHE/pri_icache_controller.sv
+ fi
 
- vlog -quiet -sv ../RTL/L1_CACHE/pri_icache_controller.sv
  vlog -quiet -sv ../RTL/L1_CACHE/pri_icache.sv
- vlog -quiet -sv ../RTL/L1_CACHE/register_file_2r_2w_icache.sv
+ vlog -quiet -sv ../RTL/L1_CACHE/register_file_1w_multi_port_read.sv
+ vlog -quiet -sv ../RTL/L1_CACHE/register_file_1w_multi_port_read_test_wrap.sv
+ vlog -quiet -sv ../RTL/L1_CACHE/refill_arbiter.sv
 
  vlog -quiet -sv ../RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache.sv
@@ -94,10 +108,13 @@ cd ../SIM
  vlog -sv -work work -quiet  ../TB/l2_generic.sv
  vlog -sv -work work -quiet  ../TB/tgen_128.sv
  vlog -sv -work work -quiet  ../TB/generic_memory_with_grant.sv
- vlog -sv -work work -quiet  ../TB/tb.sv
 
- # vlog -sv -work work SRAM_SP_32w_10b_SS_1V08_125c.v  +define+FUNCTIONAL
- # vlog -sv -work work SRAM_SP_32w_128b_SS_1V08_125c.v +define+FUNCTIONAL
+ if [ "$BITS" == "32" ]
+ then
+     vlog -sv -work work -quiet  ../TB/tb.sv  +define+HIERARCHY_ICACHE_32BIT
+ else
+     vlog -sv -work work -quiet  ../TB/tb.sv
+ fi
 
  vopt +acc tb -o tb_no_opt
  vsim tb_no_opt -do "do wave.do; run 10us; source enable_icache_no_prefetch.tcl; run 1ms; q"
