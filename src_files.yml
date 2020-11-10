@@ -7,6 +7,7 @@ hier-icache:
     RTL/L1_CACHE/pri_icache_controller.sv,
     RTL/L1_CACHE/refill_arbiter.sv,
     RTL/L1_CACHE/pri_icache.sv,
+    RTL/L1_CACHE/register_file_1w_multi_port_read.sv,
     RTL/L1_CACHE/register_file_1w_multi_port_read_test_wrap.sv,
     RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv,
     RTL/L1.5_CACHE/share_icache.sv,
@@ -18,3 +19,4 @@ hier-icache:
     CTRL_UNIT/hier_icache_ctrl_unit.sv,
     CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv,
   ]
+  
