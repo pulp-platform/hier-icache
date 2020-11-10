@@ -630,6 +630,7 @@ endgenerate
                             `ENABLE_L1_L15_PREFETCH: // Enable L1_L15
                             begin
                               NS = IDLE;
+        	              deliver_response       = 1'b1;
                             end
                       endcase
 
