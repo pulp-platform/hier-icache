@@ -374,8 +374,8 @@ module icache_hier_top
    // -----------------------------------------------------------------------------------------
 
    // Eg 9 COres: --> NCH_0 = 8, NCH_1= 1;
-   localparam N_CH0 = (2**$clog2( NB_CORES ) == NB_CORES) ? NB_CORES : 2**$clog2( NB_CORES-1);
-   localparam N_CH1 = (2**$clog2( NB_CORES ) == NB_CORES) ? 0       : NB_CORES - 2**$clog2( NB_CORES-1);
+   localparam N_CH0 = (2**$clog2( NB_CORES ) == NB_CORES) ? NB_CORES : 2**($clog2( NB_CORES)-1);
+   localparam N_CH1 = (2**$clog2( NB_CORES ) == NB_CORES) ? 0       : NB_CORES - 2**($clog2( NB_CORES)-1);
 
    icache_intc
    #(
