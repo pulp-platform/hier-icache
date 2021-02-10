@@ -5,8 +5,8 @@ package:
     - "Angelo Garofalo <angelo.garofalo@unibo.it>"
 
 dependencies:
-  common_cells: { git: "git@github.com:pulp-platform/common_cells.git", version: 1.13.1 }
-  tech_cells_generic: { git: "git@github.com:pulp-platform/tech_cells_generic", version: 0.1.6 }
+  common_cells: { git: "git@github.com:pulp-platform/common_cells.git", version: 1.21.0 }
+  tech_cells_generic: { git: "git@github.com:pulp-platform/tech_cells_generic", version: 0.2.3 }
   scm: { git: "git@github.com:pulp-platform/scm.git", version: 1.0.1 }
   icache-intc: { git: "git@github.com:pulp-platform/icache-intc.git", version: 1.0.1 }
   axi_slice: { git: "git@github.com:pulp-platform/axi_slice.git", version: 1.1.4 } # deprecated, replaced by axi_cut (in axi repo)
