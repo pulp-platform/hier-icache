@@ -21,7 +21,11 @@ module tb;
    parameter AXI_USER         = 4;
 
    parameter FETCH_ADDR_WIDTH = 32;
-   parameter PRI_FETCH_DATA_WIDTH = 32;
+`ifdef HIERARCHY_ICACHE_32BIT
+   parameter PRI_FETCH_DATA_WIDTH = 32;  // Choose 128 or 32
+`else
+   parameter PRI_FETCH_DATA_WIDTH = 128;  // Choose 128 or 32
+`endif
    parameter SH_FETCH_DATA_WIDTH  = 128;
 
    parameter PRI_NB_WAYS          = 4;
@@ -295,7 +299,7 @@ module tb;
             .lint_addr_offset_i ( fetch_addr_int[i][3:2]            ),
 
             .lint_r_rdata_o  ( instr_r_rdata_L2_to_check[i]         ),
-            .lint_r_rdata_32_o ( instr_r_rdata_32_L2_to_check[i]    ),
+            .lint_r_rdata_32_o ( instr_r_rdata_32_L2_to_check[i][31:0]),
             .lint_r_valid_o  (                                      )
          );
 
