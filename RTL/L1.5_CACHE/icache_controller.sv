@@ -126,9 +126,9 @@ module share_icache_controller
 
    `ifdef FEATURE_ICACHE_STAT
    ,
-   output logic [31:0]                                                  ctrl_hit_count_icache_o,
-   output logic [31:0]                                                  ctrl_trans_count_icache_o,
-   output logic [31:0]                                                  ctrl_miss_count_icache_o,
+   output logic [15:0]                                                  ctrl_hit_count_icache_o,
+   output logic [15:0]                                                  ctrl_trans_count_icache_o,
+   output logic [15:0]                                                  ctrl_miss_count_icache_o,
    input  logic                                                         ctrl_clear_regs_icache_i,
    input  logic                                                         ctrl_enable_regs_icache_i
    `endif

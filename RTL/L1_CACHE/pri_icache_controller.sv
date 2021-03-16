@@ -70,9 +70,9 @@ module pri_icache_controller
    output logic                                             flush_set_ID_ack_o,
 
 `ifdef FEATURE_ICACHE_STAT
-    output logic [31:0]                                     bank_hit_count_o,
-    output logic [31:0]                                     bank_trans_count_o,
-    output logic [31:0]                                     bank_miss_count_o,
+    output logic [15:0]                                     bank_hit_count_o,
+    output logic [15:0]                                     bank_trans_count_o,
+    output logic [15:0]                                     bank_miss_count_o,
 
     input  logic                                            ctrl_clear_regs_i,
     input  logic                                            ctrl_enable_regs_i,
@@ -216,7 +216,7 @@ module pri_icache_controller
 
 `ifdef FEATURE_ICACHE_STAT
 
-   logic [31:0]                                             eviction_counter;
+   logic [15:0]                                             eviction_counter;
 
    always_ff @(posedge clk, negedge rst_n)
      begin

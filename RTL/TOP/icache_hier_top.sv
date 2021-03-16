@@ -222,7 +222,7 @@ module icache_hier_top
    logic [SH_NB_BANKS-1:0]                             axi_master_rvalid_int;     // slave data valid
    logic [SH_NB_BANKS-1:0]                             axi_master_rready_int;     // master ready to accept
 
-   logic [NB_CORES - 1 :0][31:0]                         congestion_counter;
+   logic [NB_CORES - 1 :0][15:0]                         congestion_counter;
 
 
    genvar i;
@@ -304,8 +304,13 @@ module icache_hier_top
       for(i=0;i<NB_CORES;i++)
       begin : PRI_ICACHE
 
-         assign IC_ctrl_unit_bus_pri[i].ctrl_cong_count = congestion_counter[i];
+         assign IC_ctrl_unit_bus_pri[i].ctrl_cong_count = {16'h0000, congestion_counter[i]};
 
+         assign IC_ctrl_unit_bus_pri[i].ctrl_hit_count[31:16]= 16'h0000;
+         assign IC_ctrl_unit_bus_pri[i].ctrl_trans_count[31:16]= 16'h0000;
+         assign IC_ctrl_unit_bus_pri[i].ctrl_miss_count[31:16]= 16'h0000;
+          
+                  
          pri_icache
          #(
             .FETCH_ADDR_WIDTH     ( FETCH_ADDR_WIDTH ), //= 32,       // Size of the fetch address
@@ -349,9 +354,9 @@ module icache_hier_top
 
         `ifdef FEATURE_ICACHE_STAT
              ,
-             .bank_hit_count_o    ( IC_ctrl_unit_bus_pri[i].ctrl_hit_count       ),
-             .bank_trans_count_o  ( IC_ctrl_unit_bus_pri[i].ctrl_trans_count     ),
-             .bank_miss_count_o   ( IC_ctrl_unit_bus_pri[i].ctrl_miss_count      ),
+             .bank_hit_count_o    ( IC_ctrl_unit_bus_pri[i].ctrl_hit_count[15:0]       ),
+             .bank_trans_count_o  ( IC_ctrl_unit_bus_pri[i].ctrl_trans_count[15:0]     ),
+             .bank_miss_count_o   ( IC_ctrl_unit_bus_pri[i].ctrl_miss_count[15:0]       ),
 
              .ctrl_clear_regs_i   ( IC_ctrl_unit_bus_pri[i].ctrl_clear_regs      ),
              .ctrl_enable_regs_i  ( IC_ctrl_unit_bus_pri[i].ctrl_enable_regs     )
@@ -420,7 +425,12 @@ module icache_hier_top
    // ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝ //
    /////////////////////////////////////////////////////////////////////////////////////////
    for (i=0; i<  SH_NB_BANKS; i++)
-   begin : Main_Icache
+     begin : Main_Icache
+         
+         assign IC_ctrl_unit_bus_main[i].ctrl_hit_count[31:16]= 16'h0000;
+         assign IC_ctrl_unit_bus_main[i].ctrl_trans_count[31:16]= 16'h0000;
+         assign IC_ctrl_unit_bus_main[i].ctrl_miss_count[31:16]= 16'h0000;
+          
    share_icache
    #(
       .N_BANKS                ( SH_NB_BANKS                    ),
@@ -529,10 +539,10 @@ module icache_hier_top
       .ctrl_sel_flush_ack_o          ( IC_ctrl_unit_bus_main[i].sel_flush_ack        )
    `ifdef FEATURE_ICACHE_STAT
       ,
-      .ctrl_hit_count_icache_o       ( IC_ctrl_unit_bus_main[i].ctrl_hit_count    ),
-      .ctrl_trans_count_icache_o     ( IC_ctrl_unit_bus_main[i].ctrl_trans_count  ),
-      .ctrl_miss_count_icache_o      ( IC_ctrl_unit_bus_main[i].ctrl_miss_count   ),
-      .ctrl_clear_regs_icache_i      ( IC_ctrl_unit_bus_main[i].ctrl_clear_regs   ),
+      .ctrl_hit_count_icache_o       ( IC_ctrl_unit_bus_main[i].ctrl_hit_count[15:0]    ),
+      .ctrl_trans_count_icache_o     ( IC_ctrl_unit_bus_main[i].ctrl_trans_count[15:0]  ),
+      .ctrl_miss_count_icache_o      ( IC_ctrl_unit_bus_main[i].ctrl_miss_count[15:0]   ),
+      .ctrl_clear_regs_icache_i      ( IC_ctrl_unit_bus_main[i].ctrl_clear_regs    ),
       .ctrl_enable_regs_icache_i     ( IC_ctrl_unit_bus_main[i].ctrl_enable_regs   )
    `endif
    );
