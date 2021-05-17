@@ -1,3 +1,0 @@
-axi/axi_node:
-  commit: master
-  domain: [cluster, soc]
