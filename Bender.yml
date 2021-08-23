@@ -51,7 +51,7 @@ sources:
     # Level 1
   - CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv
   - RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
-  - RTL/L1.5_CACHE/icache_controller.sv
+  - RTL/L1.5_CACHE/share_icache_controller.sv
   - RTL/L1_CACHE/register_file_1w_multi_port_read_test_wrap.sv
     # Level 2
   - RTL/L1.5_CACHE/share_icache.sv

@@ -39,7 +39,7 @@ cd ../SIM
 
  vlog -quiet -sv ../RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache.sv
- vlog -quiet -sv ../RTL/L1.5_CACHE/icache_controller.sv
+ vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache_controller.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/RefillTracker_4.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/REP_buffer_4.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/ram_ws_rs_data_scm.sv +define+USE_SRAM
