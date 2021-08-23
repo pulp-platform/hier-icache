@@ -5,6 +5,7 @@ hier-icache:
   ]
   incdirs: [
     ../../rtl/includes,
+    ../axi/axi/include,
   ]
   files: [
     RTL/TOP/icache_hier_top.sv,
