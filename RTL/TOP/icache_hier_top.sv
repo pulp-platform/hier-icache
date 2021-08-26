@@ -40,7 +40,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 `include "pulp_soc_defines.sv"
-`include "axi/typedef.svh"
 
 module icache_hier_top
 #(
@@ -167,88 +166,18 @@ module icache_hier_top
   localparam AXI_ID_OUT  = $clog2(SH_NB_BANKS) + AXI_ID_INT;
   localparam ADDR_OFFSET = $clog2(SH_FETCH_DATA_WIDTH)-3;
 
-  typedef logic [  AXI_ADDR-1:0] addr_t;
-  typedef logic [AXI_ID_INT-1:0] int_id_t;
-  typedef logic [AXI_ID_OUT-1:0] out_id_t;
-  typedef logic [  AXI_USER-1:0] user_t;
-  typedef logic [  AXI_DATA-1:0] data_t;
-  typedef logic [AXI_DATA/8-1:0] strb_t;
-
-  `AXI_TYPEDEF_AW_CHAN_T(slv_aw_chan_t, addr_t, int_id_t, user_t)
-  `AXI_TYPEDEF_AW_CHAN_T(mst_aw_chan_t, addr_t, out_id_t, user_t)
-  `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
-  `AXI_TYPEDEF_B_CHAN_T(slv_b_chan_t, int_id_t, user_t)
-  `AXI_TYPEDEF_B_CHAN_T(mst_b_chan_t, out_id_t, user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(slv_ar_chan_t, addr_t, int_id_t, user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(mst_ar_chan_t, addr_t, out_id_t, user_t)
-  `AXI_TYPEDEF_R_CHAN_T(slv_r_chan_t, data_t, int_id_t, user_t)
-  `AXI_TYPEDEF_R_CHAN_T(mst_r_chan_t, data_t, out_id_t, user_t)
-  `AXI_TYPEDEF_REQ_T(slv_req_t, slv_aw_chan_t, w_chan_t, slv_ar_chan_t)
-  `AXI_TYPEDEF_RESP_T(slv_resp_t, slv_b_chan_t, slv_r_chan_t)
-  `AXI_TYPEDEF_REQ_T(mst_req_t, mst_aw_chan_t, w_chan_t, mst_ar_chan_t)
-  `AXI_TYPEDEF_RESP_T(mst_resp_t, mst_b_chan_t, mst_r_chan_t)
-
-  mst_req_t  mst_req;
-  mst_resp_t mst_resp;
-
-  slv_req_t  [SH_NB_BANKS-1:0] slv_req;
-  slv_resp_t [SH_NB_BANKS-1:0] slv_resp;
-
-  logic [SH_NB_BANKS-1:0][AXI_ID_INT-1:0] axi_master_awid_int;
-  logic [SH_NB_BANKS-1:0][  AXI_ADDR-1:0] axi_master_awaddr_int;
-  logic [SH_NB_BANKS-1:0][           7:0] axi_master_awlen_int;
-  logic [SH_NB_BANKS-1:0][           2:0] axi_master_awsize_int;
-  logic [SH_NB_BANKS-1:0][           1:0] axi_master_awburst_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_awlock_int;
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_awcache_int;
-  logic [SH_NB_BANKS-1:0][           2:0] axi_master_awprot_int;
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_awregion_int;
-  logic [SH_NB_BANKS-1:0][  AXI_USER-1:0] axi_master_awuser_int;
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_awqos_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_awvalid_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_awready_int;
-
-  //AXI write data bus -------------- // // --------------
-  logic [SH_NB_BANKS-1:0][  AXI_DATA-1:0] axi_master_wdata_int;
-  logic [SH_NB_BANKS-1:0][AXI_DATA/8-1:0] axi_master_wstrb_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_wlast_int;
-  logic [SH_NB_BANKS-1:0][  AXI_USER-1:0] axi_master_wuser_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_wvalid_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_wready_int;
-  // ---------------------------------------------------------------
-
-  //AXI BACKWARD write response bus -------------- // // --------------
-  logic [SH_NB_BANKS-1:0][AXI_ID_INT-1:0] axi_master_bid_int;
-  logic [SH_NB_BANKS-1:0][           1:0] axi_master_bresp_int;
-  logic [SH_NB_BANKS-1:0][  AXI_USER-1:0] axi_master_buser_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_bvalid_int;
-  logic [SH_NB_BANKS-1:0]                 axi_master_bready_int;
-  // ---------------------------------------------------------------
-
-  //AXI read address bus -------------------------------------------
-  logic [SH_NB_BANKS-1:0][AXI_ID_INT-1:0] axi_master_arid_int;     //
-  logic [SH_NB_BANKS-1:0][  AXI_ADDR-1:0] axi_master_araddr_int;   //
-  logic [SH_NB_BANKS-1:0][           7:0] axi_master_arlen_int;    // burst length - 1 to 256
-  logic [SH_NB_BANKS-1:0][           2:0] axi_master_arsize_int;   // size of each transfer in burst
-  logic [SH_NB_BANKS-1:0][           1:0] axi_master_arburst_int;  // for bursts>1, accept only incr burst=01
-  logic [SH_NB_BANKS-1:0]                 axi_master_arlock_int;   // only normal access supported axs_awlock=00
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_arcache_int;  //
-  logic [SH_NB_BANKS-1:0][           2:0] axi_master_arprot_int;   //
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_arregion_int; //
-  logic [SH_NB_BANKS-1:0][  AXI_USER-1:0] axi_master_aruser_int;   //
-  logic [SH_NB_BANKS-1:0][           3:0] axi_master_arqos_int;    //
-  logic [SH_NB_BANKS-1:0]                 axi_master_arvalid_int;  // master addr valid
-  logic [SH_NB_BANKS-1:0]                 axi_master_arready_int;  // slave ready to accept
-  // --------------------------------------------------------------------------------
-
-  //AXI BACKWARD read data bus ----------------------------------------------
-  logic [SH_NB_BANKS-1:0][AXI_ID_INT-1:0] axi_master_rid_int;    //
-  logic [SH_NB_BANKS-1:0][  AXI_DATA-1:0] axi_master_rdata_int;  //
-  logic [SH_NB_BANKS-1:0][           1:0] axi_master_rresp_int;  //
-  logic [SH_NB_BANKS-1:0]                 axi_master_rlast_int;  // last transfer in burst
-  logic [SH_NB_BANKS-1:0][  AXI_USER-1:0] axi_master_ruser_int;  //
-  logic [SH_NB_BANKS-1:0]                 axi_master_rvalid_int; // slave data valid
-  logic [SH_NB_BANKS-1:0]                 axi_master_rready_int; // master ready to accept
+  AXI_BUS #(
+    .AXI_ADDR_WIDTH ( AXI_ADDR   ),
+    .AXI_DATA_WIDTH ( AXI_DATA   ),
+    .AXI_ID_WIDTH   ( AXI_ID_INT ),
+    .AXI_USER_WIDTH ( AXI_USER   )
+  ) axi_master_int_intf [SH_NB_BANKS-1:0] ();
+  AXI_BUS #(
+    .AXI_ADDR_WIDTH ( AXI_ADDR   ),
+    .AXI_DATA_WIDTH ( AXI_DATA   ),
+    .AXI_ID_WIDTH   ( AXI_ID_OUT ),
+    .AXI_USER_WIDTH ( AXI_USER   )
+  ) axi_out_intf ();
 
   logic [NB_CORES-1:0][31:0] congestion_counter;
 
@@ -459,54 +388,54 @@ module icache_hier_top
       // §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§ //
       // §§§§§§§§§§§§§§§§§§§    REFILL Request side  §§§§§§§§§§§§§§§§§§§§§§§ //
       // §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§ //
-      .init_awid_o                   ( slv_req[i].aw.id     ),
-      .init_awaddr_o                 ( slv_req[i].aw.addr   ),
-      .init_awlen_o                  ( slv_req[i].aw.len    ),
-      .init_awsize_o                 ( slv_req[i].aw.size   ),
-      .init_awburst_o                ( slv_req[i].aw.burst  ),
-      .init_awlock_o                 ( slv_req[i].aw.lock   ),
-      .init_awcache_o                ( slv_req[i].aw.cache  ),
-      .init_awprot_o                 ( slv_req[i].aw.prot   ),
-      .init_awregion_o               ( slv_req[i].aw.region ),
-      .init_awuser_o                 ( slv_req[i].aw.user   ),
-      .init_awqos_o                  ( slv_req[i].aw.qos    ),
-      .init_awvalid_o                ( slv_req[i].aw_valid  ),
-      .init_awready_i                ( slv_resp[i].aw_ready  ),
+      .init_awid_o                   ( axi_master_int_intf[i].aw_id     ),
+      .init_awaddr_o                 ( axi_master_int_intf[i].aw_addr   ),
+      .init_awlen_o                  ( axi_master_int_intf[i].aw_len    ),
+      .init_awsize_o                 ( axi_master_int_intf[i].aw_size   ),
+      .init_awburst_o                ( axi_master_int_intf[i].aw_burst  ),
+      .init_awlock_o                 ( axi_master_int_intf[i].aw_lock   ),
+      .init_awcache_o                ( axi_master_int_intf[i].aw_cache  ),
+      .init_awprot_o                 ( axi_master_int_intf[i].aw_prot   ),
+      .init_awregion_o               ( axi_master_int_intf[i].aw_region ),
+      .init_awuser_o                 ( axi_master_int_intf[i].aw_user   ),
+      .init_awqos_o                  ( axi_master_int_intf[i].aw_qos    ),
+      .init_awvalid_o                ( axi_master_int_intf[i].aw_valid  ),
+      .init_awready_i                ( axi_master_int_intf[i].aw_ready  ),
 
-      .init_wdata_o                  ( axi_master_wdata_int[i]    ),
-      .init_wstrb_o                  ( axi_master_wstrb_int[i]    ),
-      .init_wlast_o                  ( axi_master_wlast_int[i]    ),
-      .init_wuser_o                  ( axi_master_wuser_int[i]    ),
-      .init_wvalid_o                 ( axi_master_wvalid_int[i]   ),
-      .init_wready_i                 ( axi_master_wready_int[i]   ),
+      .init_wdata_o                  ( axi_master_int_intf[i].w_data    ),
+      .init_wstrb_o                  ( axi_master_int_intf[i].w_strb    ),
+      .init_wlast_o                  ( axi_master_int_intf[i].w_last    ),
+      .init_wuser_o                  ( axi_master_int_intf[i].w_user    ),
+      .init_wvalid_o                 ( axi_master_int_intf[i].w_valid   ),
+      .init_wready_i                 ( axi_master_int_intf[i].w_ready   ),
 
-      .init_bid_i                    ( axi_master_bid_int[i]      ),
-      .init_bresp_i                  ( axi_master_bresp_int[i]    ),
-      .init_buser_i                  ( axi_master_buser_int[i]    ),
-      .init_bvalid_i                 ( axi_master_bvalid_int[i]   ),
-      .init_bready_o                 ( axi_master_bready_int[i]   ),
+      .init_bid_i                    ( axi_master_int_intf[i].b_id      ),
+      .init_bresp_i                  ( axi_master_int_intf[i].b_resp    ),
+      .init_buser_i                  ( axi_master_int_intf[i].b_user    ),
+      .init_bvalid_i                 ( axi_master_int_intf[i].b_valid   ),
+      .init_bready_o                 ( axi_master_int_intf[i].b_ready   ),
 
-      .init_arid_o                   ( axi_master_arid_int[i]     ),
-      .init_araddr_o                 ( axi_master_araddr_int[i]   ),
-      .init_arlen_o                  ( axi_master_arlen_int[i]    ),
-      .init_arsize_o                 ( axi_master_arsize_int[i]   ),
-      .init_arburst_o                ( axi_master_arburst_int[i]  ),
-      .init_arlock_o                 ( axi_master_arlock_int[i]   ),
-      .init_arcache_o                ( axi_master_arcache_int[i]  ),
-      .init_arprot_o                 ( axi_master_arprot_int[i]   ),
-      .init_arregion_o               ( axi_master_arregion_int[i] ),
-      .init_aruser_o                 ( axi_master_aruser_int[i]   ),
-      .init_arqos_o                  ( axi_master_arqos_int[i]    ),
-      .init_arvalid_o                ( axi_master_arvalid_int[i]  ),
-      .init_arready_i                ( axi_master_arready_int[i]  ),
+      .init_arid_o                   ( axi_master_int_intf[i].ar_id     ),
+      .init_araddr_o                 ( axi_master_int_intf[i].ar_addr   ),
+      .init_arlen_o                  ( axi_master_int_intf[i].ar_len    ),
+      .init_arsize_o                 ( axi_master_int_intf[i].ar_size   ),
+      .init_arburst_o                ( axi_master_int_intf[i].ar_burst  ),
+      .init_arlock_o                 ( axi_master_int_intf[i].ar_lock   ),
+      .init_arcache_o                ( axi_master_int_intf[i].ar_cache  ),
+      .init_arprot_o                 ( axi_master_int_intf[i].ar_prot   ),
+      .init_arregion_o               ( axi_master_int_intf[i].ar_region ),
+      .init_aruser_o                 ( axi_master_int_intf[i].ar_user   ),
+      .init_arqos_o                  ( axi_master_int_intf[i].ar_qos    ),
+      .init_arvalid_o                ( axi_master_int_intf[i].ar_valid  ),
+      .init_arready_i                ( axi_master_int_intf[i].ar_ready  ),
 
-      .init_rid_i                    ( axi_master_rid_int[i]       ),
-      .init_rdata_i                  ( axi_master_rdata_int[i]     ),
-      .init_rresp_i                  ( axi_master_rresp_int[i]     ),
-      .init_rlast_i                  ( axi_master_rlast_int[i]     ),
-      .init_ruser_i                  ( axi_master_ruser_int[i]     ),
-      .init_rvalid_i                 ( axi_master_rvalid_int[i]    ),
-      .init_rready_o                 ( axi_master_rready_int[i]    ),
+      .init_rid_i                    ( axi_master_int_intf[i].r_id       ),
+      .init_rdata_i                  ( axi_master_int_intf[i].r_data     ),
+      .init_rresp_i                  ( axi_master_int_intf[i].r_resp     ),
+      .init_rlast_i                  ( axi_master_int_intf[i].r_last     ),
+      .init_ruser_i                  ( axi_master_int_intf[i].r_user     ),
+      .init_rvalid_i                 ( axi_master_int_intf[i].r_valid    ),
+      .init_rready_o                 ( axi_master_int_intf[i].r_ready    ),
 
       // Control ports
       .ctrl_req_enable_icache_i      ( IC_ctrl_unit_bus_main[i].ctrl_req_enable      ),
@@ -545,129 +474,75 @@ module icache_hier_top
   /////////////////////////////////////////////////////////////////
   
 
-  assign axi_master_awid_o[AXI_ID_OUT-1:0] = mst_req.aw.id;
-  assign axi_master_awaddr_o               = mst_req.aw.addr;
-  assign axi_master_awlen_o                = mst_req.aw.len;
-  assign axi_master_awsize_o               = mst_req.aw.size;
-  assign axi_master_awburst_o              = mst_req.aw.burst;
-  assign axi_master_awlock_o               = mst_req.aw.lock;
-  assign axi_master_awcache_o              = mst_req.aw.cache;
-  assign axi_master_awprot_o               = mst_req.aw.prot;
-  assign axi_master_awregion_o             = mst_req.aw.region;
-  assign axi_master_awuser_o               = mst_req.aw.user;
-  assign axi_master_awqos_o                = mst_req.aw.qos;
-  assign axi_master_awvalid_o              = mst_req.aw_valid;
-  assign mst_resp.aw_ready                 = axi_master_awready_i;
+  assign axi_master_awid_o     = axi_out_intf.aw_id;
+  assign axi_master_awaddr_o   = axi_out_intf.aw_addr;
+  assign axi_master_awlen_o    = axi_out_intf.aw_len;
+  assign axi_master_awsize_o   = axi_out_intf.aw_size;
+  assign axi_master_awburst_o  = axi_out_intf.aw_burst;
+  assign axi_master_awlock_o   = axi_out_intf.aw_lock;
+  assign axi_master_awcache_o  = axi_out_intf.aw_cache;
+  assign axi_master_awprot_o   = axi_out_intf.aw_prot;
+  assign axi_master_awregion_o = axi_out_intf.aw_region;
+  assign axi_master_awuser_o   = axi_out_intf.aw_user;
+  assign axi_master_awqos_o    = axi_out_intf.aw_qos;
+  assign axi_master_awvalid_o  = axi_out_intf.aw_valid;
+  assign axi_out_intf.aw_ready = axi_master_awready_i;
 
-  assign axi_master_wdata_o  = mst_req.w.data;
-  assign axi_master_wstrb_o  = mst_req.w.strb;
-  assign axi_master_wlast_o  = mst_req.w.last;
-  assign axi_master_wuser_o  = mst_req.w.user;
-  assign axi_master_wvalid_o = mst_req.w_valid;
-  assign mst_resp.w_ready    = axi_master_wready_i;
+  assign axi_master_wdata_o  = axi_out_intf.w_data;
+  assign axi_master_wstrb_o  = axi_out_intf.w_strb;
+  assign axi_master_wlast_o  = axi_out_intf.w_last;
+  assign axi_master_wuser_o  = axi_out_intf.w_user;
+  assign axi_master_wvalid_o = axi_out_intf.w_valid;
+  assign axi_out_intf.w_ready    = axi_master_wready_i;
 
-  assign mst_resp.b.id       = axi_master_bid_i[AXI_ID_OUT-1:0];
-  assign mst_resp.b.resp     = axi_master_bresp_i;
-  assign mst_resp.b.user     = axi_master_buser_i;
-  assign mst_resp.b_valid    = axi_master_bvalid_i;
-  assign axi_master_bready_o = mst_req.b_ready;
+  assign axi_out_intf.b_id    = axi_master_bid_i;
+  assign axi_out_intf.b_resp  = axi_master_bresp_i;
+  assign axi_out_intf.b_user  = axi_master_buser_i;
+  assign axi_out_intf.b_valid = axi_master_bvalid_i;
+  assign axi_master_bready_o  = axi_out_intf.b_ready;
 
-  assign axi_master_arid_o[AXI_ID_OUT-1:0] = mst_req.ar.id;
-  assign axi_master_araddr_o               = mst_req.ar.addr;
-  assign axi_master_arlen_o                = mst_req.ar.len;
-  assign axi_master_arsize_o               = mst_req.ar.size;
-  assign axi_master_arburst_o              = mst_req.ar.burst;
-  assign axi_master_arlock_o               = mst_req.ar.lock;
-  assign axi_master_arcache_o              = mst_req.ar.cache;
-  assign axi_master_arprot_o               = mst_req.ar.prot;
-  assign axi_master_arregion_o             = mst_req.ar.region;
-  assign axi_master_aruser_o               = mst_req.ar.user;
-  assign axi_master_arqos_o                = mst_req.ar.qos;
-  assign axi_master_arvalid_o              = mst_req.ar_valid;
-  assign mst_resp.ar_ready                 = axi_master_arready_i;
+  assign axi_master_arid_o     = axi_out_intf.ar_id;
+  assign axi_master_araddr_o   = axi_out_intf.ar_addr;
+  assign axi_master_arlen_o    = axi_out_intf.ar_len;
+  assign axi_master_arsize_o   = axi_out_intf.ar_size;
+  assign axi_master_arburst_o  = axi_out_intf.ar_burst;
+  assign axi_master_arlock_o   = axi_out_intf.ar_lock;
+  assign axi_master_arcache_o  = axi_out_intf.ar_cache;
+  assign axi_master_arprot_o   = axi_out_intf.ar_prot;
+  assign axi_master_arregion_o = axi_out_intf.ar_region;
+  assign axi_master_aruser_o   = axi_out_intf.ar_user;
+  assign axi_master_arqos_o    = axi_out_intf.ar_qos;
+  assign axi_master_arvalid_o  = axi_out_intf.ar_valid;
+  assign axi_out_intf.ar_ready = axi_master_arready_i;
 
-  assign mst_resp.r.id       = axi_master_rid_i[AXI_ID_OUT-1:0];
-  assign mst_resp.r.data     = axi_master_rdata_i;
-  assign mst_resp.r.resp     = axi_master_rresp_i;
-  assign mst_resp.r.last     = axi_master_rlast_i;
-  assign mst_resp.r.user     = axi_master_ruser_i;
-  assign mst_resp.r_valid    = axi_master_rvalid_i;
-  assign axi_master_rready_o = mst_req.r_ready;
+  assign axi_out_intf.r_id    = axi_master_rid_i;
+  assign axi_out_intf.r_data  = axi_master_rdata_i;
+  assign axi_out_intf.r_resp  = axi_master_rresp_i;
+  assign axi_out_intf.r_last  = axi_master_rlast_i;
+  assign axi_out_intf.r_user  = axi_master_ruser_i;
+  assign axi_out_intf.r_valid = axi_master_rvalid_i;
+  assign axi_master_rready_o  = axi_out_intf.r_ready;
 
-  for (genvar i = 0; i < SH_NB_BANKS; i++) begin
-
-    assign slv_req[i].w.data        = axi_master_wdata_int[i];
-    assign slv_req[i].w.strb        = axi_master_wstrb_int[i];
-    assign slv_req[i].w.last        = axi_master_wlast_int[i];
-    assign slv_req[i].w.user        = axi_master_wuser_int[i];
-    assign slv_req[i].w_valid       = axi_master_wvalid_int[i];
-    assign axi_master_wready_int[i] = slv_resp[i].w_ready;
-    
-    
-    assign axi_master_bid_int[i]    = slv_resp[i].b.id;
-    assign axi_master_bresp_int[i]  = slv_resp[i].b.resp;
-    assign axi_master_bvalid_int[i] = slv_resp[i].b_valid;
-    assign axi_master_buser_int[i]  = slv_resp[i].b.user;
-    assign slv_req[i].b_ready       = axi_master_bready_int[i];
-    
-    
-    assign slv_req[i].ar.id          = axi_master_arid_int[i];
-    assign slv_req[i].ar.addr        = axi_master_araddr_int[i];
-    assign slv_req[i].ar.len         = axi_master_arlen_int[i];
-    assign slv_req[i].ar.size        = axi_master_arsize_int[i];
-    assign slv_req[i].ar.burst       = axi_master_arburst_int[i];
-    assign slv_req[i].ar.lock        = axi_master_arlock_int[i];
-    assign slv_req[i].ar.cache       = axi_master_arcache_int[i];
-    assign slv_req[i].ar.prot        = axi_master_arprot_int[i];
-    assign slv_req[i].ar.region      = axi_master_arregion_int[i];
-    assign slv_req[i].ar.user        = axi_master_aruser_int[i];
-    assign slv_req[i].ar.qos         = axi_master_arqos_int[i];
-    assign slv_req[i].ar_valid       = axi_master_arvalid_int[i];
-    assign axi_master_arready_int[i] = slv_resp[i].ar_ready;
-    
-    assign axi_master_rid_int[i]    = slv_resp[i].r.id;
-    assign axi_master_rdata_int[i]  = slv_resp[i].r.data;
-    assign axi_master_rresp_int[i]  = slv_resp[i].r.resp;
-    assign axi_master_rlast_int[i]  = slv_resp[i].r.last;
-    assign axi_master_ruser_int[i]  = slv_resp[i].r.user;
-    assign axi_master_rvalid_int[i] = slv_resp[i].r_valid;
-    assign slv_req[i].r_ready       = axi_master_rready_int[i];
-  end
-
-  axi_mux #(
-    .SlvAxiIDWidth(AXI_ID_INT),
-    .slv_aw_chan_t(slv_aw_chan_t),
-    .mst_aw_chan_t(mst_aw_chan_t),
-    .w_chan_t     (w_chan_t),
-    .slv_b_chan_t (slv_b_chan_t),
-    .mst_b_chan_t (mst_b_chan_t),
-    .slv_ar_chan_t(slv_ar_chan_t),
-    .mst_ar_chan_t(mst_ar_chan_t),
-    .slv_r_chan_t (slv_r_chan_t),
-    .mst_r_chan_t (mst_r_chan_t),
-    .slv_req_t    (slv_req_t),
-    .slv_resp_t   (slv_resp_t),
-    .mst_req_t    (mst_req_t),
-    .mst_resp_t   (mst_resp_t),
-    .NoSlvPorts   (SH_NB_BANKS),
-    .MaxWTrans    (2),
-    .FallThrough  (1'b0),
-    .SpillAw      (1'b0),
-    .SpillW       (1'b0),
-    .SpillB       (1'b0),
-    .SpillAr      (1'b0),
-    .SpillR       (1'b0)
-  ) AXI_INSTRUCTION_BUS (
-    .clk_i      (clk),
-    .rst_ni     (rst_n),
-    .test_i     (test_en_i),
-    .slv_reqs_i (slv_req),
-    .slv_resps_o(slv_resp),
-    .mst_req_o  (mst_req),
-    .mst_resp_i (mst_resp)
+  axi_mux_intf #(
+    .SLV_AXI_ID_WIDTH( AXI_ID_INT  ),
+    .MST_AXI_ID_WIDTH( AXI_ID_OUT  ),
+    .AXI_ADDR_WIDTH  ( AXI_ADDR    ),
+    .AXI_DATA_WIDTH  ( AXI_DATA    ),
+    .AXI_USER_WIDTH  ( AXI_USER    ),
+    .NO_SLV_PORTS    ( SH_NB_BANKS ),
+    .MAX_W_TRANS     ( 32'd1       ), // no writes through this interface
+    .FALL_THROUGH    ( 1'b0        ),
+    .SPILL_AW        ( 1'b0        ),
+    .SPILL_W         ( 1'b0        ),
+    .SPILL_B         ( 1'b0        ),
+    .SPILL_AR        ( 1'b0        ),
+    .SPILL_R         ( 1'b0        )
+  ) i_axi_mux (
+    .clk_i ( clk                 ),
+    .rst_ni( rst_n               ),
+    .test_i( test_en_i           ),
+    .slv   ( axi_master_int_intf ),
+    .mst   ( axi_out_intf        )
   );
-
-  assign axi_master_awid_o[AXI_ID-1:AXI_ID_OUT] = {(AXI_ID-AXI_ID_OUT){1'b0}};
-  assign axi_master_arid_o[AXI_ID-1:AXI_ID_OUT] = {(AXI_ID-AXI_ID_OUT){1'b0}};
 
 endmodule // icache_hier_top
