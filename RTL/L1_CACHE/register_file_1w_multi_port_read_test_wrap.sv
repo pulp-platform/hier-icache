@@ -81,7 +81,7 @@ module register_file_1w_multi_port_read_test_wrap
    assign Q_T = ReadData[0];
 
 
-    register_file_1w_multi_port_read
+    register_file_1w_multi_port_read_ff
     #(
         .ADDR_WIDTH ( ADDR_WIDTH ),
         .DATA_WIDTH ( DATA_WIDTH ),

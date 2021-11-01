@@ -10,7 +10,6 @@
 
 
 `include "pulp_soc_defines.sv"
-// `define  USE_SRAM
 
 module ram_ws_rs_data_scm
 #(
@@ -29,111 +28,101 @@ module ram_ws_rs_data_scm
     output logic [data_width-1:0]       rdata
 );
 
-`ifdef USE_DATA_SRAM
+`ifdef USE_SRAM_DATA_CACHE
+ `ifdef SYNTHESIS
+   logic cs_n;
+   logic we_n;
 
-    logic cs_n;
-    logic we_n;
+   assign  cs_n = ~req;
+   assign  we_n = ~write;
+   if (data_width==128) begin : SRAM_CUT
+      case (addr_width)
+        5: begin
 
-    assign  cs_n = ~req;
-    assign  we_n = ~write;
+           logic [6:0]   n_aw;
+           logic         n_ac;
+           logic [127:0] bw;
 
-    generate
-      if(data_width==128)
-      begin : SRAM_CUT
+           // Current available GF22 memory macros have 256 rows, which means a wider address width (8 bits)
+           assign {n_aw, n_ac} = {3'b0, addr};
+           assign bw = (we_n) ?  '0 : '1;
 
-        case (addr_width)
-            5: begin
-                logic [4-1:0]   n_aw;
-                logic [1-1:0]   n_ac;
-                logic [127:0]   bw;
-                assign {n_aw, n_ac} = addr;
-                assign bw = (we_n) ?  '0 : '1;
+           // GF22
+           IN22FDX_R1PH_NFHN_W00256B128M02C256 sram_data
+             (
+              .CLK      ( clk   ), // input
+              .CEN      ( cs_n  ), // input
+              .RDWEN    ( we_n  ), // input
+              .AW       ( n_aw  ), // input [6:0]
+              .AC       ( n_ac  ), // input
+              .D        ( wdata ), // input [127:0]
+              .BW       ( bw    ), // input [127:0]
+              .T_LOGIC  ( 1'b0  ), // input
+              .MA_SAWL  ( '0    ), // input
+              .MA_WL    ( '0    ), // input
+              .MA_WRAS  ( '0    ), // input
+              .MA_WRASD ( '0    ), // input
+              .Q        ( rdata ), // output [127:0]
+              .OBSV_CTL (       )  // output
+              );
+        end // case: 5
+        6: begin
 
-                // GF22
-                SPREG_32w_128b sram_data
-                (
+           logic [6:0]   n_aw;
+           logic         n_ac;
+           logic [127:0] bw;
 
-                    .CLK      ( clk   ), // input
-                    .CEN      ( cs_n  ), // input
-                    .RDWEN    ( we_n  ), // input
-                    .AW       ( n_aw  ), // input [3:0]
-                    .AC       ( n_ac  ), // input
-                    .D        ( wdata ), // input [127:0]
-                    .BW       ( '1    ), // input [127:0]
-                    .T_LOGIC  ( 1'b0  ), // input
-                    .MA_SAWL  ( '0    ), // input
-                    .MA_WL    ( '0    ), // input
-                    .MA_WRAS  ( '0    ), // input
-                    .MA_WRASD ( '0    ), // input
-                    .Q        ( rdata ), // output [127:0]
-                    .OBSV_CTL (       )  // output
-                );
+           // Current memory macros have 256 lines, which means a wider address width (8 bits)
+           assign {n_aw, n_ac} = {2'b0, addr};
+           assign bw = (we_n) ?  '0 : '1;
 
-                // TSMC55
-                // SRAM_SP_32w_128b sram_data
-                // (
-                //     .CS_N    ( cs_n  ),
-                //     .CLK     ( clk   ),
-                //     .WR_N    ( we_n  ),
-                //     .RW_ADDR ( addr  ),
-                //     .RST_N   ( rst_n ),
-                //     .DATA_IN ( wdata ),
-                //     .DATA_OUT( rdata )
-                // );
-            end
+           // GF22
+           IN22FDX_R1PH_NFHN_W00256B128M02C256 sram_data
+             (
+              .CLK      ( clk   ), // input
+              .CEN      ( cs_n  ), // input
+              .RDWEN    ( we_n  ), // input
+              .AW       ( n_aw  ), // input [6:0]
+              .AC       ( n_ac  ), // input
+              .D        ( wdata ), // input [127:0]
+              .BW       ( bw    ), // input [127:0]
+              .T_LOGIC  ( 1'b0  ), // input
+              .MA_SAWL  ( '0    ), // input
+              .MA_WL    ( '0    ), // input
+              .MA_WRAS  ( '0    ), // input
+              .MA_WRASD ( '0    ), // input
+              .Q        ( rdata ), // output [127:0]
+              .OBSV_CTL (       )  // output
+              );
+        end // case: 6
+        default : /* default */;
+      endcase // case (addr_width)
+   end // block: SRAM_CUT
+ `else
+   tc_sram #(
+     .NumWords  (2**addr_width),
+     .DataWidth (data_width),
+     .AddrWidth (addr_width),
+     .PrintSimCfg (1'b1),
+     .NumPorts  (1)
+   ) sram_data (
+     .clk_i   (clk),
+     .rst_ni  (rst_n),
+     .req_i   (req),
+     .we_i    (write),
+     .addr_i  (addr),
+     .wdata_i (wdata),
+     .be_i    (be),
+     .rdata_o (rdata)
+   );
 
-            6: begin
-                logic          n_as;
-                logic [2:0]    n_aw;
-                logic [1:0]    n_ac;
-                logic [127:0]   bw;
-                assign {n_aw[2], n_as, n_aw[1:0], n_ac} = addr;
-                assign bw = (we_n) ?  '0 : '1;
+ `endif // !`ifdef SYNTHESIS
 
-                SP1D_64w_128b sram_data
-                (
-                    .CLK         ( clk           ),
-                    .CEN         ( cs_n          ),
-                    .RDWEN       ( we_n          ),
-                    .DEEPSLEEP   ( 1'b0          ),
-                    .POWERGATE   ( 1'b0          ),
-                    .AS          ( n_as          ),
-                    .AW          ( n_aw          ),
-                    .AC          ( n_ac          ),
-                    .D           ( wdata         ),
-                    .BW          ( bw            ),
-                    .T_BIST      ( 1'b0          ),
-                    .T_LOGIC     ( 1'b0          ),
-                    .T_CEN       ( 1'b0          ),
-                    .T_RDWEN     ( 1'b0          ),
-                    .T_DEEPSLEEP ( 1'b0          ),
-                    .T_POWERGATE ( 1'b0          ),
-                    .T_STAB      ( '0            ),
-                    .T_WBT       ( '0            ),
-                    .T_AS        ( '0            ),
-                    .T_AW        ( '0            ),
-                    .T_AC        ( '0            ),
-                    .T_D         ( '0            ),
-                    .T_BW        ( '0            ),
-                    .MA_SAWL     ( '0            ),
-                    .MA_WL       ( '0            ),
-                    .MA_WRAS     ( '0            ),
-                    .MA_WRASD    ( '0            ),
-                    .Q           ( rdata         ),
-                    .OBSV_CTL    (               )
-                );
-            end
-            default : /* default */;
-        endcase
-
-      end
-
-    endgenerate
 `else
 
  `ifdef PULP_FPGA_EMUL
     register_file_1r_1w
- `else
+ `elsif USE_FF_DATA_CACHE
     register_file_1r_1w_test_wrap
  `endif
     #(
@@ -143,9 +132,7 @@ module ram_ws_rs_data_scm
     scm_data
     (
         .clk         ( clk          ),
-    `ifdef PULP_FPGA_EMUL
         .rst_n       ( rst_n        ),
-    `endif
 
         // Read port
         .ReadEnable  ( req & ~write ),

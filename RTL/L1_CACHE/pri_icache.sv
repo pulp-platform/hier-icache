@@ -307,6 +307,7 @@ module pri_icache
          DATA_BANK
          (
             .clk         ( clk          ),
+            .rst_n       ( rst_n        ),
 
             // Read port
             .ReadEnable  ( DATA_rd_req_int[i]    ),
