@@ -64,7 +64,8 @@ module icache_hier_top
    parameter AXI_DATA          = 64,
 
    parameter USE_REDUCED_TAG   = "TRUE",   // TRUE | FALSE
-   parameter L2_SIZE           = 512*1024    // Size of max(L2 ,ROM) program memory in Byte
+   parameter L2_SIZE           = 512*1024,    // Size of max(L2 ,ROM) program memory in Byte
+   parameter BEHAV_MEM          = 1
 )
 (
    input logic                                          clk,
@@ -442,7 +443,8 @@ module icache_hier_top
       .AXI_USER               ( AXI_USER                       ),
 
       .USE_REDUCED_TAG        ( USE_REDUCED_TAG                ),
-      .L2_SIZE                ( L2_SIZE                        )
+      .L2_SIZE                ( L2_SIZE                        ),
+      .BEHAV_MEM              ( BEHAV_MEM                       ) 
    )
    i_main_shared_icache
    (

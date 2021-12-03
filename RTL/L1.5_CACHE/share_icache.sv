@@ -34,7 +34,8 @@ module share_icache
    parameter AXI_USER               = 6,
 
    parameter USE_REDUCED_TAG        = "TRUE",   // TRUE | FALSE
-   parameter L2_SIZE                = 262144    // Size of max(L2 ,ROM) program memory in Byte
+   parameter L2_SIZE                = 262144,   // Size of max(L2 ,ROM) program memory in Byte
+   parameter BEHAV_MEM               = 1
 )
 (
    // -------------------------------------------------------------------------------------
@@ -516,7 +517,8 @@ endgenerate
             ram_ws_rs_data_scm
             #(
                 .data_width( DATARAM_DATA_WIDTH ),
-                .addr_width( DATARAM_ADDR_WIDTH )
+                .addr_width( DATARAM_ADDR_WIDTH ),
+                .BEHAV_MEM(BEHAV_MEM)
             )
             DATA_RAM
             (
@@ -538,7 +540,8 @@ endgenerate
             ram_ws_rs_tag_scm
             #(
                 .data_width(TAGRAM_DATA_WIDTH),
-                .addr_width(TAGRAM_ADDR_WIDTH)
+                .addr_width(TAGRAM_ADDR_WIDTH),
+                .BEHAV_MEM(BEHAV_MEM)
             )
             TAG_RAM
             (
