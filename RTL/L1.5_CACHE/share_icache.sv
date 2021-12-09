@@ -409,6 +409,7 @@ generate
     endcase
 endgenerate
 
+   `ifndef VERILATOR
    `ifndef SYNTHESIS
    property valid_2_ready;
       @(posedge clk)
@@ -429,6 +430,7 @@ endgenerate
    assert property (ready_2_valid)
      else
        $display("@%0dns shared icache ready_2_valid assertion Failed", $time);
+   `endif
    `endif
 
    // Wait two 64 bits to combine 128 data//
