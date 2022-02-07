@@ -194,7 +194,7 @@ module pri_icache_controller
    assign pre_refill_r_data_int  = pre_refill_r_data_i;
    assign DATA_rdata_hit_int     = DATA_rdata_i[HIT_WAY];
 
-   assign cache_is_busy_o        = refill_wait_bypass;
+   // assign cache_is_busy_o        = refill_wait_bypass;
 
    assign first_available_way_OH   = logic_nbways'(1 << first_available_way);
    assign first_available_way_p_OH = logic_nbways'(1 << first_available_way_p);
