@@ -104,10 +104,10 @@ module register_file_1w_multi_port_read_ff
            always_ff @(posedge clk or negedge rst_n)
            begin: reg_wdata
               if (rst_n == 1'b0) begin
-                 MemContentxDP[k] = '0;
+                 MemContentxDP[k] <= '0;
               end else begin
                  if (WAddrEn[k] == 1'b1) begin
-                    MemContentxDP[k] = WriteData;
+                    MemContentxDP[k] <= WriteData;
                  end
               end
            end
