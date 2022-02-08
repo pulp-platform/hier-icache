@@ -43,9 +43,7 @@ module register_file_1w_multi_port_read_ff
     logic [NUM_WORDS-1:0]                          WAddrEn;
 
     int unsigned i;
-    int unsigned k;
 
-    genvar       x;
     genvar       z;
 
 
