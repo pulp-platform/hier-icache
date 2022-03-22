@@ -162,8 +162,7 @@ module icache_hier_top
   logic [SH_NB_BANKS-1:0][           NB_CORES-1:0] fetch_rID_from_main_cache;
 
   // signal from icache-sh banks to axi node
-  localparam AXI_ID_INT  = 1;
-  localparam AXI_ID_OUT  = $clog2(SH_NB_BANKS) + AXI_ID_INT;
+  localparam AXI_ID_INT  = AXI_ID - $clog2(SH_NB_BANKS);
   localparam ADDR_OFFSET = $clog2(SH_FETCH_DATA_WIDTH)-3;
 
   AXI_BUS #(
@@ -175,7 +174,7 @@ module icache_hier_top
   AXI_BUS #(
     .AXI_ADDR_WIDTH ( AXI_ADDR   ),
     .AXI_DATA_WIDTH ( AXI_DATA   ),
-    .AXI_ID_WIDTH   ( AXI_ID_OUT ),
+    .AXI_ID_WIDTH   ( AXI_ID     ),
     .AXI_USER_WIDTH ( AXI_USER   )
   ) axi_out_intf ();
 
@@ -488,12 +487,12 @@ module icache_hier_top
   assign axi_master_awvalid_o  = axi_out_intf.aw_valid;
   assign axi_out_intf.aw_ready = axi_master_awready_i;
 
-  assign axi_master_wdata_o  = axi_out_intf.w_data;
-  assign axi_master_wstrb_o  = axi_out_intf.w_strb;
-  assign axi_master_wlast_o  = axi_out_intf.w_last;
-  assign axi_master_wuser_o  = axi_out_intf.w_user;
-  assign axi_master_wvalid_o = axi_out_intf.w_valid;
-  assign axi_out_intf.w_ready    = axi_master_wready_i;
+  assign axi_master_wdata_o   = axi_out_intf.w_data;
+  assign axi_master_wstrb_o   = axi_out_intf.w_strb;
+  assign axi_master_wlast_o   = axi_out_intf.w_last;
+  assign axi_master_wuser_o   = axi_out_intf.w_user;
+  assign axi_master_wvalid_o  = axi_out_intf.w_valid;
+  assign axi_out_intf.w_ready = axi_master_wready_i;
 
   assign axi_out_intf.b_id    = axi_master_bid_i;
   assign axi_out_intf.b_resp  = axi_master_bresp_i;
@@ -525,7 +524,7 @@ module icache_hier_top
 
   axi_mux_intf #(
     .SLV_AXI_ID_WIDTH( AXI_ID_INT  ),
-    .MST_AXI_ID_WIDTH( AXI_ID_OUT  ),
+    .MST_AXI_ID_WIDTH( AXI_ID      ),
     .AXI_ADDR_WIDTH  ( AXI_ADDR    ),
     .AXI_DATA_WIDTH  ( AXI_DATA    ),
     .AXI_USER_WIDTH  ( AXI_USER    ),
@@ -545,4 +544,11 @@ module icache_hier_top
     .mst   ( axi_out_intf        )
   );
 
+`ifndef VERILATOR
+  initial begin
+    assert (AXI_ID > $clog2(SH_NB_BANKS))
+      else $error("AXI input ID width must be larger than $clog2(SH_NB_BANKS) which is %d but width was %d", $clog2(SH_NB_BANKS), AXI_ID);
+  end
+`endif
+   
 endmodule // icache_hier_top
