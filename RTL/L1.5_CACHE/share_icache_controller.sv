@@ -392,7 +392,7 @@ module share_icache_controller #(
 
     // AXI AR REQUEST REFILL
     init_arvalid_o  = 1'b0;
-    init_arid_o     = CACHE_ID;
+    init_arid_o     = '0;
     init_arlock_o   = 1'b0;
     init_arcache_o  = '0;
     init_arprot_o   = '0;
