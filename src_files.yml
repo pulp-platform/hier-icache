@@ -1,6 +1,6 @@
 hier-icache:
   incdirs: [
-    ../../rtl/includes,
+    ../../hw/includes,
   ]
   files: [
     RTL/TOP/icache_hier_top.sv,
@@ -22,4 +22,4 @@ hier-icache:
     CTRL_UNIT/hier_icache_ctrl_unit.sv,
     CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv,
   ]
-  
+
