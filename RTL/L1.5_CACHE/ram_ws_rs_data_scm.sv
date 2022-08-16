@@ -47,44 +47,26 @@ module ram_ws_rs_data_scm #(
 
 `else  // !`ifndef PULP_FPGA_EMUL
 
-  //    register_file_1r_1w
-  //    #(
-  //        .ADDR_WIDTH(addr_width),
-  //        .DATA_WIDTH(data_width)
-  //    )
-  //    scm_data
-  //    (
-  //        .clk         ( clk          ),
-  //        .rst_n       ( rst_n        ),
-  //
-  //        // Read port
-  //        .ReadEnable  ( req & ~write ),
-  //        .ReadAddr    ( addr         ),
-  //        .ReadData    ( rdata        ),
-  //
-  //        // Write port
-  //        .WriteEnable ( req & write  ),
-  //        .WriteAddr   ( addr         ),
-  //        .WriteData   ( wdata        )
-  //    );
+  register_file_1r_1w
+  #(
+      .ADDR_WIDTH(addr_width),
+      .DATA_WIDTH(data_width)
+  )
+  scm_data
+  (
+      .clk         ( clk          ),
+      .rst_n       ( rst_n        ),
 
-  logic                    ena;
-  logic [  addr_width-1:0] add;
-  logic [data_width/8-1:0] wea;
+      // Read port
+      .ReadEnable  ( req & ~write ),
+      .ReadAddr    ( addr         ),
+      .ReadData    ( rdata        ),
 
-  assign ena = 1'b1;
-  assign wea = {(data_width / 8) {req}} & {(data_width / 8) {write}};
-
-  xilinx_data_cache_32x128 i_data_cache_ram_32x128_fpga (
-      .clka (clk),
-      .rsta (~rst_n),
-      .ena  (ena),
-      .wea  (wea),
-      .addra(addr),
-      .dina (wdata),
-      .douta(rdata)
+      // Write port
+      .WriteEnable ( req & write  ),
+      .WriteAddr   ( addr         ),
+      .WriteData   ( wdata        )
   );
-
 
 `endif  // !`ifndef PULP_FPGA_EMUL
 

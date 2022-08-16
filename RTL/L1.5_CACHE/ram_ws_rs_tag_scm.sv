@@ -46,45 +46,25 @@ module ram_ws_rs_tag_scm #(
 
 `else  // !`ifndef PULP_FPGA_EMUL
 
-  //      register_file_1r_1w
-  //      #(
-  //        .ADDR_WIDTH(addr_width),
-  //        .DATA_WIDTH(data_width)
-  //      )
-  //      scm_tag
-  //      (
-  //        .clk           (clk),
-  //        .rst_n         (rst_n),
-  //
-  //        // Read port
-  //        .ReadEnable  ( req & ~write ),
-  //        .ReadAddr    ( addr         ),
-  //        .ReadData    ( rdata        ),
-  //
-  //        // Write port
-  //        .WriteEnable ( req & write  ),
-  //        .WriteAddr   ( addr         ),
-  //        .WriteData   ( wdata        )
-  //      );
+  register_file_1r_1w
+  #(
+    .ADDR_WIDTH(addr_width),
+    .DATA_WIDTH(data_width)
+  )
+  scm_tag
+  (
+    .clk           (clk),
+    .rst_n         (rst_n),
 
-  logic                    ena;
-  logic [  addr_width-1:0] add;
-  logic [data_width/8-1:0] wea;
-  logic [  data_width-1:0] wdata_bram;
+    // Read port
+    .ReadEnable  ( req & ~write ),
+    .ReadAddr    ( addr         ),
+    .ReadData    ( rdata        ),
 
-  assign ena = 1'b1;
-  assign wdata_bram = {6'b0, wdata};  // Pad with zeros to get 16 data tag width from 10 bit width
-  // Xilinx BRAM does not support sizes not multiple of ByteSize (1B = 8 bits)
-  assign wea = {(data_width / 8) {req}} & {(data_width / 8) {write}};
-
-  xilinx_tag_cache_32x10 i_tag_cache_ram_32x10_fpga (
-      .clka (clk),
-      .rsta (~rst_n),
-      .ena  (ena),
-      .wea  (wea),
-      .addra(addr),
-      .dina (wdata),
-      .douta(rdata)
+    // Write port
+    .WriteEnable ( req & write  ),
+    .WriteAddr   ( addr         ),
+    .WriteData   ( wdata        )
   );
 
 `endif  // !`ifndef PULP_FPGA_EMUL
