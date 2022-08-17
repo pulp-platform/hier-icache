@@ -65,7 +65,8 @@ module icache_hier_top
 
    parameter USE_REDUCED_TAG   = "TRUE",   // TRUE | FALSE
    parameter L2_SIZE           = 512*1024,    // Size of max(L2 ,ROM) program memory in Byte
-   parameter BEHAV_MEM          = 1
+   parameter BEHAV_MEM         = 1,
+   parameter FPGA_MEM          = 0
 )
 (
    input logic                                          clk,
@@ -444,7 +445,8 @@ module icache_hier_top
 
       .USE_REDUCED_TAG        ( USE_REDUCED_TAG                ),
       .L2_SIZE                ( L2_SIZE                        ),
-      .BEHAV_MEM              ( BEHAV_MEM                       ) 
+      .BEHAV_MEM              ( BEHAV_MEM                      ),
+      .FPGA_MEM               ( FPGA_MEM                       )
    )
    i_main_shared_icache
    (

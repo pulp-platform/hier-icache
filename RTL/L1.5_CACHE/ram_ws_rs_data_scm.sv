@@ -15,7 +15,8 @@ module ram_ws_rs_data_scm #(
     parameter data_width = 64,
     parameter addr_width = 7,
     parameter be_width   = data_width / 8,
-    parameter BEHAV_MEM  = 1
+    parameter BEHAV_MEM  = 1,
+    parameter FPGA_MEM   = 0
 ) (
     input  logic                  clk,
     input  logic                  rst_n,
@@ -27,11 +28,10 @@ module ram_ws_rs_data_scm #(
     output logic [data_width-1:0] rdata
 );
 
-`ifndef PULP_FPGA_EMUL
-
   // DATA CACHE RAM
   icache_data_sram_wrap #(
       .BehavMem (BEHAV_MEM),
+      .FPGAMem  (FPGA_MEM),
       .NumWords (2 ** addr_width),  //32 words
       .DataWidth(data_width)
   ) i_data_cache_ram_wrap (
@@ -44,31 +44,5 @@ module ram_ws_rs_data_scm #(
       .be_i   (be),
       .rdata_o(rdata)
   );
-
-`else  // !`ifndef PULP_FPGA_EMUL
-
-  register_file_1r_1w
-  #(
-      .ADDR_WIDTH(addr_width),
-      .DATA_WIDTH(data_width)
-  )
-  scm_data
-  (
-      .clk         ( clk          ),
-      .rst_n       ( rst_n        ),
-
-      // Read port
-      .ReadEnable  ( req & ~write ),
-      .ReadAddr    ( addr         ),
-      .ReadData    ( rdata        ),
-
-      // Write port
-      .WriteEnable ( req & write  ),
-      .WriteAddr   ( addr         ),
-      .WriteData   ( wdata        )
-  );
-
-`endif  // !`ifndef PULP_FPGA_EMUL
-
 
 endmodule

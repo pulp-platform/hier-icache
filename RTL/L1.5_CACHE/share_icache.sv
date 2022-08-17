@@ -35,7 +35,8 @@ module share_icache
 
    parameter USE_REDUCED_TAG        = "TRUE",   // TRUE | FALSE
    parameter L2_SIZE                = 262144,   // Size of max(L2 ,ROM) program memory in Byte
-   parameter BEHAV_MEM               = 1
+   parameter BEHAV_MEM              = 1,
+   parameter FPGA_MEM               = 0
 )
 (
    // -------------------------------------------------------------------------------------
@@ -520,7 +521,8 @@ endgenerate
             #(
                 .data_width( DATARAM_DATA_WIDTH ),
                 .addr_width( DATARAM_ADDR_WIDTH ),
-                .BEHAV_MEM(BEHAV_MEM)
+                .BEHAV_MEM(BEHAV_MEM),
+                .FPGA_MEM(FPGA_MEM)
             )
             DATA_RAM
             (
@@ -543,7 +545,8 @@ endgenerate
             #(
                 .data_width(TAGRAM_DATA_WIDTH),
                 .addr_width(TAGRAM_ADDR_WIDTH),
-                .BEHAV_MEM(BEHAV_MEM)
+                .BEHAV_MEM(BEHAV_MEM),
+                .FPGA_MEM(FPGA_MEM)
             )
             TAG_RAM
             (
