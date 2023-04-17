@@ -1,6 +1,11 @@
 hier-icache:
+  vlog_opts: [
+    -L common_cells_lib,
+    -L axi_lib,
+  ]
   incdirs: [
     ../../rtl/includes,
+    ../axi/axi/include,
   ]
   files: [
     RTL/TOP/icache_hier_top.sv,
@@ -11,7 +16,7 @@ hier-icache:
     RTL/L1_CACHE/register_file_1w_multi_port_read_test_wrap.sv,
     RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv,
     RTL/L1.5_CACHE/share_icache.sv,
-    RTL/L1.5_CACHE/icache_controller.sv,
+    RTL/L1.5_CACHE/share_icache_controller.sv,
     RTL/L1.5_CACHE/RefillTracker_4.sv,
     RTL/L1.5_CACHE/REP_buffer_4.sv,
     RTL/L1.5_CACHE/ram_ws_rs_data_scm.sv,

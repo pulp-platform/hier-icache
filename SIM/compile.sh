@@ -7,19 +7,24 @@ rm -rf work
 set REPO_PATH="../RTL"
 
 cd ../RTL
-git clone git@iis-git.ee.ethz.ch:pulp-open/axi_node.git --branch v1.0.1
+git clone git@github.com:pulp-platform/axi.git --branch v0.29.1
 git clone git@github.com:pulp-platform/axi_slice.git --branch v1.1.0
-git clone git@github.com:pulp-platform/common_cells.git --branch v1.10.0
-git clone git@github.com:pulp-platform/tech_cells_generic.git
-cd tech_cells_generic
-git checkout 812f60a4a46
-cd ..
+git clone git@github.com:pulp-platform/common_cells.git --branch v1.21.0
+git clone git@github.com:pulp-platform/tech_cells_generic.git --branch v0.2.3
+# cd tech_cells_generic
+# git checkout 812f60a4a46
+# cd ..
 git clone git@github.com:pulp-platform/icache-intc.git --branch pulp-v1.0
 git clone git@github.com:pulp-platform/scm.git --branch v1.0.0
 cd ../SIM
 
 # COMPILE THE RTL
- vlog -quiet -sv ../RTL/TOP/icache_hier_top.sv
+ vlog -sv -work work -quiet ../RTL/axi/src/axi_pkg.sv +incdir+../RTL/axi/include +incdir+../RTL/common_cells/include
+ vlog -sv -work work -quiet ../RTL/axi/src/axi_intf.sv +incdir+../RTL/axi/include +incdir+../RTL/common_cells/include
+ vlog -sv -work work -quiet ../RTL/axi/src/axi_mux.sv +incdir+../RTL/axi/include +incdir+../RTL/common_cells/include
+ vlog -sv -work work -quiet ../RTL/axi/src/axi_id_prepend.sv +incdir+../RTL/axi/include +incdir+../RTL/common_cells/include
+
+ vlog -quiet -sv ../RTL/TOP/icache_hier_top.sv +incdir+../RTL/axi/include
  echo "--------------------------------------"
  if [ "$BITS" == "32" ]
  then
@@ -39,7 +44,7 @@ cd ../SIM
 
  vlog -quiet -sv ../RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache.sv
- vlog -quiet -sv ../RTL/L1.5_CACHE/icache_controller.sv
+ vlog -quiet -sv ../RTL/L1.5_CACHE/share_icache_controller.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/RefillTracker_4.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/REP_buffer_4.sv
  vlog -quiet -sv ../RTL/L1.5_CACHE/ram_ws_rs_data_scm.sv +define+USE_SRAM
@@ -49,28 +54,6 @@ cd ../SIM
 
 
  # COMPILE RTL from other Repositories
- vlog -sv -work work -quiet ../RTL/axi_node/axi_address_decoder_AR.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_address_decoder_AW.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_address_decoder_BR.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_address_decoder_BW.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_address_decoder_DW.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_ArbitrationTree.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_AR_allocator.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_AW_allocator.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_BR_allocator.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_BW_allocator.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_DW_allocator.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_FanInPrimitive_Req.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_multiplexer.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_regs_top.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_node_wrap_with_slices.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_node_wrap.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_node.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_request_block.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_response_block.sv
- vlog -sv -work work -quiet ../RTL/axi_node/axi_RR_Flag_Req.sv
-
-
 
  vlog -sv -work work -quiet ../RTL/axi_slice/axi_r_buffer.sv
  vlog -sv -work work -quiet ../RTL/axi_slice/axi_ar_buffer.sv
@@ -85,8 +68,13 @@ cd ../SIM
  vlog -sv -work work -quiet ../RTL/common_cells/src/deprecated/generic_fifo.sv
  vlog -sv -work work -quiet ../RTL/common_cells/src/lfsr_8bit.sv
  vlog -sv -work work -quiet ../RTL/common_cells/src/onehot_to_bin.sv
+ vlog -sv -work work -quiet ../RTL/common_cells/src/cf_math_pkg.sv
+ vlog -sv -work work -quiet ../RTL/common_cells/src/lzc.sv
+ vlog -sv -work work -quiet ../RTL/common_cells/src/rr_arb_tree.sv
+ vlog -sv -work work -quiet ../RTL/common_cells/src/spill_register.sv
 
- vlog -sv -work work -quiet ../RTL/tech_cells_generic/src/cluster_clock_gating.sv
+ vlog -sv -work work -quiet ../RTL/tech_cells_generic/src/deprecated/cluster_clk_cells.sv
+ vlog -sv -work work -quiet ../RTL/tech_cells_generic/src/rtl/tc_clk.sv
 
  vlog -sv -work work -quiet ../RTL/icache-intc/DistributedArbitrationNetwork_Req_icache_intc.sv
  vlog -sv -work work -quiet ../RTL/icache-intc/DistributedArbitrationNetwork_Resp_icache_intc.sv

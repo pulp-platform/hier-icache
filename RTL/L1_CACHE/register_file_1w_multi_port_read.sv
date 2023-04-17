@@ -52,7 +52,7 @@ module register_file_1w_multi_port_read
     genvar       x;
     genvar       z;
 
-    cluster_clock_gating CG_WE_GLOBAL
+    tc_clk_gating CG_WE_GLOBAL
     (
         .clk_o     ( clk_int        ),
         .en_i      ( WriteEnable    ),
@@ -117,7 +117,7 @@ module register_file_1w_multi_port_read
     generate
         for(x=0; x<NUM_WORDS; x++)
         begin : CG_CELL_WORD_ITER
-                cluster_clock_gating CG_Inst
+                tc_clk_gating CG_Inst
                 (
                   .clk_o     ( ClocksxC[x]      ),
                   .en_i      ( WAddrOneHotxD[x] ),
