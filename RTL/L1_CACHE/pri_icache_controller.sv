@@ -34,8 +34,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "pulp_soc_defines.sv"
-
 module pri_icache_controller
 #(
    parameter FETCH_ADDR_WIDTH     = 32,

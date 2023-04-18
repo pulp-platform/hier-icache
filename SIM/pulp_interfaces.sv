@@ -1,4 +1,3 @@
-`include "pulp_soc_defines.sv"
 
 interface PRI_ICACHE_CTRL_UNIT_BUS;
     // ICACHE_CTRL UNIT INTERFACE
