@@ -9,7 +9,7 @@ dependencies:
   tech_cells_generic: { git: "git@github.com:pulp-platform/tech_cells_generic", version: 0.1.6 }
   scm: { git: "git@github.com:pulp-platform/scm.git", version: 1.0.1 }
   icache-intc: { git: "git@github.com:pulp-platform/icache-intc.git", version: 1.0.1 }
-  axi_slice: { git: "git@github.com:pulp-platform/axi_slice.git", version: 1.1.4 } # deprecated, replaced by axi_cut (in axi repo)
+#  axi_slice: { git: "git@github.com:pulp-platform/axi_slice.git", version: 1.1.4 } # vendored and patched
   axi_node: { git: "git@github.com:pulp-platform/axi_node.git", version: 1.1.4 } # deprecated, replaced by axi_xbar (in axi repo)
 
 sources:
@@ -18,13 +18,16 @@ sources:
     # levels 1 and 0, etc. Files within a level are ordered alphabetically.
     # Level 0
   - CTRL_UNIT/hier_icache_ctrl_unit.sv
+  - RTL/L1.5_CACHE/icache_data_sram_wrap.sv
+  - RTL/L1.5_CACHE/icache_tag_sram_wrap.sv
   - RTL/L1.5_CACHE/ram_ws_rs_data_scm.sv
   - RTL/L1.5_CACHE/ram_ws_rs_tag_scm.sv
   - RTL/L1.5_CACHE/RefillTracker_4.sv
   - RTL/L1.5_CACHE/REP_buffer_4.sv
   - RTL/L1_CACHE/pri_icache_controller.sv
   - RTL/L1_CACHE/refill_arbiter.sv
-  - RTL/L1_CACHE/register_file_1w_multi_port_read.sv
+  - RTL/L1_CACHE/register_file_1w_multi_port_read_ff.sv
+  - RTL/L1_CACHE/register_file_1w_multi_port_read_latch.sv
     # Level 1
   - CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv
   - RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
