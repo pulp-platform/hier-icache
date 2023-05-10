@@ -6,8 +6,8 @@ package:
 
 dependencies:
   common_cells:       { git: "https://github.com/pulp-platform/common_cells.git", version: 1.21.0 }
-  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.3 }
-  scm:                { git: "https://github.com/pulp-platform/scm.git", version: 1.1.0 }
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.11 }
+  scm:                { git: "https://github.com/pulp-platform/scm.git", rev: f7b51416f3c407e4c31e9c016616d57aae2687bd }
   icache-intc:        { git: "https://github.com/pulp-platform/icache-intc.git", version: 1.0.1 }
   axi_slice:          { git: "https://github.com/pulp-platform/axi_slice.git", version: 1.1.4 } # deprecated, replaced by axi_cut (in axi repo)
   axi:                { git: "https://github.com/pulp-platform/axi.git", version: =0.39.0-beta.4  }
@@ -24,7 +24,6 @@ sources:
   - RTL/L1.5_CACHE/REP_buffer_4.sv
   - RTL/L1_CACHE/pri_icache_controller.sv
   - RTL/L1_CACHE/refill_arbiter.sv
-  - RTL/L1_CACHE/register_file_1w_multi_port_read.sv
     # Level 1
   - CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv
   - RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
