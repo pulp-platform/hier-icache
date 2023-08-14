@@ -10,6 +10,9 @@
 
 
 // `define  USE_SRAM
+`ifdef PULP_FPGA_EMUL
+  `define ICAHE_USE_FF
+`endif
 
 module ram_ws_rs_data_scm
 #(
@@ -130,7 +133,7 @@ module ram_ws_rs_data_scm
     endgenerate
 `else
 
- `ifdef PULP_FPGA_EMUL
+ `ifdef ICAHE_USE_FF
     register_file_1r_1w
  `else
     register_file_1r_1w_test_wrap
@@ -142,7 +145,7 @@ module ram_ws_rs_data_scm
     scm_data
     (
         .clk         ( clk          ),
-    `ifdef PULP_FPGA_EMUL
+    `ifdef ICAHE_USE_FF
         .rst_n       ( rst_n        ),
     `endif
 
@@ -155,7 +158,7 @@ module ram_ws_rs_data_scm
         .WriteEnable ( req & write  ),
         .WriteAddr   ( addr         ),
         .WriteData   ( wdata        )
-    `ifndef PULP_FPGA_EMUL
+    `ifndef ICAHE_USE_FF
         ,
         // BIST ENABLE
         .BIST        ( 1'b0                ), // PLEASE CONNECT ME;

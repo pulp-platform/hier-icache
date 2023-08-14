@@ -37,6 +37,10 @@
 
 `define USE_REQ_BUFF
 
+`ifdef PULP_FPGA_EMUL
+  `define ICAHE_USE_FF
+`endif
+
 module pri_icache
 #(
    parameter FETCH_ADDR_WIDTH = 32,       // Size of the fetch address
@@ -243,9 +247,9 @@ module pri_icache
          assign TAG_write_enable[i] = TAG_req_int[0][i] &  TAG_we_int;
 
 
-     `ifdef PULP_FPGA_EMUL
+     `ifdef ICAHE_USE_FF
          register_file_1w_multi_port_read
-      `else
+     `else
          register_file_1w_multi_port_read_test_wrap
      `endif
          #(
@@ -268,17 +272,17 @@ module pri_icache
             .WriteEnable ( TAG_write_enable[i] ),
             .WriteAddr   ( TAG_addr_int[0]     ),
             .WriteData   ( TAG_wdata_int       )
-        `ifndef PULP_FPGA_EMUL
-            ,
-            // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+        `ifndef ICAHE_USE_FF
+           ,
+           // BIST ENABLE
+           .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
 
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .Q_T         (                     )
+           // BIST ports
+           .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+           .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+           .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+           .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+           .Q_T         (                     )
         `endif
          );
       end
@@ -294,7 +298,7 @@ module pri_icache
       for(i=0; i<NB_WAYS; i++)
       begin : _DATA_WAY_
 
-     `ifdef PULP_FPGA_EMUL
+     `ifdef ICAHE_USE_FF
          register_file_1r_1w
      `else
          register_file_1r_1w_test_wrap
@@ -306,7 +310,9 @@ module pri_icache
          DATA_BANK
          (
             .clk         ( clk          ),
-
+        `ifdef ICAHE_USE_FF
+            .rst_n       ( rst_n        ),
+        `endif
             // Read port
             .ReadEnable  ( DATA_rd_req_int[i]    ),
             .ReadAddr    ( DATA_rd_addr_int      ),
@@ -316,7 +322,7 @@ module pri_icache
             .WriteEnable ( DATA_wr_req_int[i]    ),
             .WriteAddr   ( DATA_wr_addr_int      ),
             .WriteData   ( DATA_wdata_int        )
-        `ifndef PULP_FPGA_EMUL
+        `ifndef ICAHE_USE_FF
             ,
             // BIST ENABLE
             .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
@@ -328,10 +334,9 @@ module pri_icache
             .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
             .Q_T         (                     )
         `endif
-         );
+        );
       end
    endgenerate
-
 
   refill_arbiter
     #(
