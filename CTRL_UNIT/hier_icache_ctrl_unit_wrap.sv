@@ -22,8 +22,8 @@ module hier_icache_ctrl_unit_wrap
 
     XBAR_PERIPH_BUS.Slave                       speriph_slave,
 
-    SP_ICACHE_CTRL_UNIT_BUS.Master              IC_ctrl_unit_bus_main[NB_CACHE_BANKS],
-    PRI_ICACHE_CTRL_UNIT_BUS.Master             IC_ctrl_unit_bus_pri[NB_CORES],
+    SP_ICACHE_CTRL_UNIT_BUS.Master              IC_ctrl_unit_bus_main[NB_CACHE_BANKS-1:0],
+    PRI_ICACHE_CTRL_UNIT_BUS.Master             IC_ctrl_unit_bus_pri[NB_CORES-1:0],
     output logic [NB_CORES-1:0]                 enable_l1_l15_prefetch_o
 
 );
