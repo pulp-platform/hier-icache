@@ -5,10 +5,10 @@ package:
     - "Angelo Garofalo <angelo.garofalo@unibo.it>"
 
 dependencies:
-  common_cells: { git: "git@github.com:pulp-platform/common_cells.git", version: 1.13.1 }
-  tech_cells_generic: { git: "git@github.com:pulp-platform/tech_cells_generic", version: 0.2.11 }
-  scm: { git: "git@github.com:pulp-platform/scm.git", rev: 74426dee36f28ae1c02f7635cf844a0156145320 }
-  icache-intc: { git: "git@github.com:pulp-platform/icache-intc.git", version: 1.0.1 }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.13.1 }
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic", version: 0.2.11 }
+  scm: { git: "https://github.com/pulp-platform/scm.git", rev: 74426dee36f28ae1c02f7635cf844a0156145320 }
+  icache-intc: { git: "https://github.com/pulp-platform/icache-intc.git", version: 1.0.1 }
   axi: { git: "https://github.com/pulp-platform/axi.git", version: 0.39  }
 
 sources:
