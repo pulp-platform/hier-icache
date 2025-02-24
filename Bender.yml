@@ -5,12 +5,12 @@ package:
     - "Angelo Garofalo <angelo.garofalo@unibo.it>"
 
 dependencies:
-  common_cells: { git: "git@github.com:pulp-platform/common_cells.git", version: 1.13.1 }
-  tech_cells_generic: { git: "git@github.com:pulp-platform/tech_cells_generic", version: 0.1.6 }
-  scm: { git: "git@github.com:pulp-platform/scm.git", version: 1.0.1 }
-  icache-intc: { git: "git@github.com:pulp-platform/icache-intc.git", version: 1.0.1 }
-  axi_slice: { git: "git@github.com:pulp-platform/axi_slice.git", version: 1.1.4 } # deprecated, replaced by axi_cut (in axi repo)
-  axi_node: { git: "git@github.com:pulp-platform/axi_node.git", version: 1.1.4 } # deprecated, replaced by axi_xbar (in axi repo)
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.13.1 }
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic", version: 0.2.11 }
+  scm: { git: "https://github.com/pulp-platform/scm.git", rev: 74426dee36f28ae1c02f7635cf844a0156145320 }
+  icache-intc: { git: "https://github.com/pulp-platform/icache-intc.git", version: 1.0.1 }
+  axi_slice: { git: "https://github.com/pulp-platform/axi_slice.git", version: 1.1.4 } # deprecated, replaced by axi_cut (in axi repo)
+  axi: { git: "https://github.com/pulp-platform/axi.git", version: 0.39  }
 
 sources:
     # Source files grouped in levels. Files in level 0 have no dependencies on files in this
@@ -24,11 +24,10 @@ sources:
   - RTL/L1.5_CACHE/REP_buffer_4.sv
   - RTL/L1_CACHE/pri_icache_controller.sv
   - RTL/L1_CACHE/refill_arbiter.sv
-  - RTL/L1_CACHE/register_file_1w_multi_port_read.sv
     # Level 1
   - CTRL_UNIT/hier_icache_ctrl_unit_wrap.sv
   - RTL/L1.5_CACHE/AXI4_REFILL_Resp_Deserializer.sv
-  - RTL/L1.5_CACHE/icache_controller.sv
+  - RTL/L1.5_CACHE/share_icache_controller.sv
   - RTL/L1_CACHE/register_file_1w_multi_port_read_test_wrap.sv
     # Level 2
   - RTL/L1.5_CACHE/share_icache.sv
