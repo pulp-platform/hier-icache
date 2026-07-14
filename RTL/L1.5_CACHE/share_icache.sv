@@ -437,6 +437,12 @@ endgenerate
    // Wait two 64 bits to combine 128 data//
    assign init_rdata_int  = {init_rdata_delay[1], init_rdata_delay[0]};
    assign init_rready_int = ~init_rvalid_int;
+   
+   // Tie to zero the unused AXI signals
+   assign init_rid_int   = '0;
+   assign init_rresp_int = '0;
+   assign init_ruser_int = '0;
+   assign init_rlast_int = '0;
 
    always_ff @(posedge clk, negedge rst_n)
      begin
