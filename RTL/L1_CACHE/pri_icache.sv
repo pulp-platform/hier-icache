@@ -272,13 +272,13 @@ module pri_icache
         `ifndef PULP_FPGA_EMUL
             ,
             // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+            .BIST        ( 1'b0                ), // BIST disabled
 
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+            // BIST ports (tied off: inactive while BIST is disabled)
+            .CSN_T       ( 1'b1                ),
+            .WEN_T       ( 1'b1                ),
+            .A_T         ( '0                  ),
+            .D_T         ( '0                  ),
             .Q_T         (                     )
         `endif
          );
@@ -321,13 +321,13 @@ module pri_icache
         `ifndef PULP_FPGA_EMUL
             ,
             // BIST ENABLE
-            .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+            .BIST        ( 1'b0                ), // BIST disabled
 
-            // BIST ports
-            .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-            .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+            // BIST ports (tied off: inactive while BIST is disabled)
+            .CSN_T       ( 1'b1                ),
+            .WEN_T       ( 1'b1                ),
+            .A_T         ( '0                  ),
+            .D_T         ( '0                  ),
             .Q_T         (                     )
         `endif
          );
