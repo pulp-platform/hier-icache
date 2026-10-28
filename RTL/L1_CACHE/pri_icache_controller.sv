@@ -281,6 +281,22 @@ module pri_icache_controller
           end
      end
 
+   // HIERARCHY_ICACHE_32BIT selects how a fetch is served from the refill line: with it, the
+   // 32-bit word addressed by fetch_addr_Q[3:2] out of a 128-bit line; without it, always
+   // word 0 of the line. The wrong choice returns wrong instructions without any error.
+`ifndef SYNTHESIS
+`ifdef HIERARCHY_ICACHE_32BIT
+   if (FETCH_DATA_WIDTH != 32 || REFILL_DATA_WIDTH != 128) begin : gen_check_fetch_width
+      $fatal(1, "pri_icache_controller: HIERARCHY_ICACHE_32BIT needs FETCH_DATA_WIDTH = 32 and REFILL_DATA_WIDTH = 128");
+   end
+`else
+   if (FETCH_DATA_WIDTH != REFILL_DATA_WIDTH) begin : gen_check_fetch_width
+      $fatal(1, "pri_icache_controller: FETCH_DATA_WIDTH = %0d differs from REFILL_DATA_WIDTH = %0d, define HIERARCHY_ICACHE_32BIT",
+             FETCH_DATA_WIDTH, REFILL_DATA_WIDTH);
+   end
+`endif
+`endif
+
 `ifdef HIERARCHY_ICACHE_32BIT
    logic                                                    r_is_not_branch;
    logic                                                    r_pre_refill_r_valid_Q;
